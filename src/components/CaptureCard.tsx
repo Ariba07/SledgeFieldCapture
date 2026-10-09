@@ -1,5 +1,6 @@
 import React from 'react';
-import {Pressable, StyleProp, Text, View, ViewStyle} from 'react-native';
+import {Pressable, ScrollView, StyleProp, Text, View, ViewStyle} from 'react-native';
+import {useNavigation} from '@react-navigation/native';
 import {RotateCw} from 'lucide-react-native';
 import {FieldCapture, CAPTURE_TYPE_LABELS, PRIORITY_LABELS} from '../types';
 import {SyncBadge} from './SyncBadge';
@@ -17,13 +18,11 @@ interface Props {
   style?: StyleProp<ViewStyle>;
 }
 
-const MAX_THUMBS = 4;
-
 export const CaptureCard: React.FC<Props> = ({capture, progress, onPress, onRetry, style}) => {
   const styles = useStyles();
   const {colors} = useTheme();
+  const navigation = useNavigation();
   const attachments = capture.attachments ?? [];
-  const extraCount = attachments.length - MAX_THUMBS;
   const percent = progress != null ? Math.round(progress * 100) : null;
   const showProgress = capture.syncStatus === 'syncing' && percent != null;
 
@@ -53,16 +52,25 @@ export const CaptureCard: React.FC<Props> = ({capture, progress, onPress, onRetr
       ) : null}
 
       {attachments.length > 0 ? (
-        <View style={styles.thumbRow}>
-          {attachments.slice(0, MAX_THUMBS).map(a => (
-            <AttachmentThumb key={a.id} attachment={a} size={56} />
+        // Scrolls sideways when there are more than fit; tap one to view it full screen.
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.thumbRow}
+          style={styles.thumbScroller}>
+          {attachments.map((a, index) => (
+            <Pressable
+              key={a.id}
+              onPress={() =>
+                navigation.navigate('MediaViewer', {captureId: capture.id, index})
+              }
+              accessibilityRole="imagebutton"
+              accessibilityLabel={`View ${a.kind} ${index + 1} of ${attachments.length}`}
+              style={({pressed}) => pressed && styles.thumbPressed}>
+              <AttachmentThumb attachment={a} size={64} />
+            </Pressable>
           ))}
-          {extraCount > 0 ? (
-            <View style={styles.moreTile}>
-              <Text style={styles.moreText}>+{extraCount}</Text>
-            </View>
-          ) : null}
-        </View>
+        </ScrollView>
       ) : null}
 
       {showProgress ? (
@@ -119,16 +127,10 @@ const useStyles = makeStyles(c => ({
   title: {...type.headline, color: c.text},
   subtitle: {...type.footnote, color: c.textSecondary, marginTop: 1},
   notes: {...type.subhead, color: c.textBody},
-  thumbRow: {flexDirection: 'row', gap: 6},
-  moreTile: {
-    width: 56,
-    height: 56,
-    borderRadius: radius.sm,
-    backgroundColor: c.surfaceMuted,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  moreText: {...type.label, color: c.textSecondary},
+  // Bleed to the card edges so thumbnails scroll under the padding.
+  thumbScroller: {marginHorizontal: -spacing.lg, flexGrow: 0},
+  thumbRow: {gap: spacing.sm, paddingHorizontal: spacing.lg},
+  thumbPressed: {opacity: 0.75},
   progressRow: {flexDirection: 'row', alignItems: 'center', gap: spacing.sm},
   progressTrack: {
     flex: 1,

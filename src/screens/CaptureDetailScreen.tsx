@@ -1,14 +1,13 @@
 import React, {useLayoutEffect} from 'react';
-import {Alert, Image, ScrollView, Text, View} from 'react-native';
-import Video from 'react-native-video';
+import {Alert, ScrollView, Text, View} from 'react-native';
 import {MapPin, Pencil, RotateCw, Trash2} from 'lucide-react-native';
 import {useSyncContext} from '../context/SyncContext';
 import {RootStackScreenProps} from '../navigation/types';
 import {SyncBadge} from '../components/SyncBadge';
+import {MediaCarousel} from '../components/MediaCarousel';
 import {Button, CaptureTypeIcon, ICON_STROKE, SectionHeader} from '../components/ui';
-import {Attachment, CAPTURE_TYPE_LABELS, FieldCapture, PRIORITY_LABELS} from '../types';
-import {formatBytes, formatDuration, formatTimestamp} from '../utils/helpers';
-import {attachmentUri} from '../services/MediaService';
+import {CAPTURE_TYPE_LABELS, FieldCapture, PRIORITY_LABELS} from '../types';
+import {formatTimestamp} from '../utils/helpers';
 import {makeStyles, radius, spacing, type, useTheme} from '../theme';
 import {READING_WIDTH, useLayout} from '../theme/layout';
 
@@ -177,56 +176,16 @@ export const CaptureDetailScreen: React.FC<RootStackScreenProps<'CaptureDetail'>
         {attachments.length > 0 ? (
           <View style={[styles.column, twoColumn && styles.mediaColumn]}>
             <SectionHeader title={`Photos & videos · ${attachments.length}`} />
-            <View style={styles.mediaList}>
-              {attachments.map(a => (
-                <MediaItem key={a.id} attachment={a} />
-              ))}
-            </View>
+            <MediaCarousel
+              attachments={attachments}
+              onOpen={index =>
+                navigation.navigate('MediaViewer', {captureId: capture.id, index})
+              }
+            />
           </View>
         ) : null}
       </View>
     </ScrollView>
-  );
-};
-
-const MediaItem: React.FC<{attachment: Attachment}> = ({attachment: a}) => {
-  const styles = useStyles();
-  const {colors} = useTheme();
-  const aspectRatio =
-    a.width && a.height ? a.width / a.height : a.kind === 'video' ? 16 / 9 : 4 / 3;
-  const uri = attachmentUri(a);
-  const meta = [
-    a.kind === 'video' ? 'Video' : 'Photo',
-    a.durationSec != null ? formatDuration(a.durationSec) : null,
-    a.sizeBytes ? formatBytes(a.sizeBytes) : null,
-  ]
-    .filter(Boolean)
-    .join(' · ');
-
-  return (
-    <View>
-      {a.kind === 'video' ? (
-        <Video
-          source={{uri}}
-          style={[styles.media, {aspectRatio}]}
-          controls
-          paused
-          resizeMode="contain"
-        />
-      ) : (
-        <Image source={{uri}} style={[styles.media, {aspectRatio}]} resizeMode="cover" />
-      )}
-      <View style={styles.mediaMeta}>
-        <Text style={styles.mediaMetaText}>{meta}</Text>
-        <Text
-          style={[
-            styles.mediaMetaText,
-            {color: a.remoteUrl ? colors.status.synced : colors.textTertiary},
-          ]}>
-          {a.remoteUrl ? 'Uploaded' : 'Not uploaded'}
-        </Text>
-      </View>
-    </View>
   );
 };
 
@@ -280,15 +239,6 @@ const useStyles = makeStyles(c => ({
   rowLabel: {...type.callout, color: c.textSecondary},
   rowValue: {...type.callout, fontWeight: '500', color: c.text, flexShrink: 1, textAlign: 'right'},
   notes: {...type.body, color: c.textBody},
-  mediaList: {gap: spacing.lg},
-  media: {
-    width: '100%',
-    maxHeight: 440,
-    borderRadius: radius.md,
-    backgroundColor: c.surfaceMuted,
-  },
-  mediaMeta: {flexDirection: 'row', justifyContent: 'space-between', marginTop: spacing.sm},
-  mediaMetaText: {...type.caption, color: c.textSecondary},
   deleteButton: {marginTop: spacing.sm},
   missing: {flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: c.background},
   missingText: {...type.callout, color: c.textTertiary},

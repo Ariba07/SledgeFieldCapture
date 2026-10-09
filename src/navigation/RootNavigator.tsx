@@ -12,6 +12,7 @@ import {MainTabs} from './MainTabs';
 import {NewCaptureScreen} from '../screens/NewCaptureScreen';
 import {CaptureDetailScreen} from '../screens/CaptureDetailScreen';
 import {EditCaptureScreen} from '../screens/EditCaptureScreen';
+import {MediaViewerScreen} from '../screens/MediaViewerScreen';
 import {useTheme} from '../theme';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -56,6 +57,16 @@ export const RootNavigator: React.FC = () => {
           name="NewCapture"
           component={NewCaptureScreen}
           options={{presentation: 'modal', headerShown: false}}
+        />
+        <Stack.Screen
+          name="MediaViewer"
+          component={MediaViewerScreen}
+          options={{
+            presentation: 'fullScreenModal',
+            animation: 'fade',
+            headerShown: false,
+            contentStyle: {backgroundColor: '#000000'},
+          }}
         />
         <Stack.Screen
           name="EditCapture"

@@ -14,6 +14,7 @@ export type RootStackParamList = {
   MainTabs: NavigatorScreenParams<MainTabParamList>;
   NewCapture: undefined;
   EditCapture: {captureId: string};
+  MediaViewer: {captureId: string; index: number};
   CaptureDetail: {captureId: string};
 };
 
