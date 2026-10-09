@@ -5,6 +5,7 @@ import {ClipboardList, Plus} from 'lucide-react-native';
 import {useSyncContext} from '../context/SyncContext';
 import {CaptureGrid} from '../components/CaptureGrid';
 import {NetworkBanner} from '../components/NetworkBanner';
+import {StorageErrorBanner} from '../components/StorageErrorBanner';
 import {Button, ICON_STROKE, SegmentedControl} from '../components/ui';
 import {MainTabScreenProps} from '../navigation/types';
 import {useTheme} from '../theme';
@@ -16,7 +17,7 @@ type Filter = 'all' | 'unsynced' | 'synced';
 export const HomeScreen: React.FC<MainTabScreenProps<'Captures'>> = ({navigation}) => {
   const styles = useHomeScreenStyles();
   const {colors} = useTheme();
-  const {captures, progress, isOnline, retryCapture} = useSyncContext();
+  const {captures, progress, isOnline, storageError, retryCapture} = useSyncContext();
   const {isCompact, gutter, insets} = useLayout();
   const [filter, setFilter] = useState<Filter>('all');
 
@@ -48,6 +49,7 @@ export const HomeScreen: React.FC<MainTabScreenProps<'Captures'>> = ({navigation
         </View>
       </View>
 
+      <StorageErrorBanner error={storageError} />
       <NetworkBanner isOnline={isOnline} pendingCount={unsynced.length} />
 
       {captures.length > 0 ? (

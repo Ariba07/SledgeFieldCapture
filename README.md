@@ -104,6 +104,26 @@ All sync behaviour lives in **`SyncEngine`**, a plain TypeScript class. React on
 
 ---
 
+## 🏭 Production readiness
+
+This is a prototype. What I'd add before shipping it to a real site team:
+
+| Area | Today | For production |
+|---|---|---|
+| **Storage** | All captures in one AsyncStorage JSON value, rewritten on each change | SQLite (op-sqlite / WatermelonDB): a row per capture, indexed queries, versioned schema migrations |
+| **Background sync** | Syncs while the app is open | iOS `BGTaskScheduler` + background `URLSession` uploads; Android `WorkManager` |
+| **Backend & auth** | Mock transport with the real request shape in comments | Auth with token refresh, per-user / per-project data, `PUT /captures/{id}` with `If-Match` |
+| **Conflicts** | Last write wins | Server versions, a "changed on server" state, field-level merge for shared records like RFIs |
+| **Testing** | Sync engine ~94% covered; one edit-flow integration test | Screen tests (React Native Testing Library), E2E offline flows (Maestro / Detox) on iOS and Android |
+| **Observability** | Storage write failures shown in-app | Crash reporting and breadcrumbs (Sentry), an error boundary, sync metrics |
+| **Security** | Captures and media stored unencrypted on device | Encrypted database, iOS file protection, wipe on sign-out |
+| **Performance** | One context; every screen re-renders on upload progress | Selector-based subscriptions (e.g. Zustand), list virtualisation tuning, image thumbnails |
+| **Release** | Template icon / splash, no environments | App icon and splash, env config (staging / prod), signed builds via Fastlane or EAS, i18n |
+
+CI (GitHub Actions) runs type checking, lint, formatting and tests on every push.
+
+---
+
 ## 🔭 Next steps
 
 - **Apple Watch companion.** React Native doesn't run on watchOS, so this would be a small SwiftUI watch app talking to the phone over WatchConnectivity (bridged with `react-native-watch-connectivity`). Scope: a complication showing unsynced captures ("3 waiting"), quick voice-note captures via dictation that queue on the watch and hand off to the phone as `pending`, and an alert when a capture fails to sync.
@@ -132,17 +152,20 @@ npm run android
 ### Running on a physical iPhone
 Open `ios/SledgeFieldCapture.xcworkspace`, pick your own team under **Signing & Capabilities** (and change the bundle id if needed), then `npm run ios -- --device`. The Simulator has no camera — use **🖼️ Library** there.
 
-### Tests
+### Checks
 
 ```bash
-npm test
+npm test            # Jest: sync engine unit tests + edit-flow integration test
+npm run typecheck   # tsc --noEmit
+npm run lint        # ESLint
+npm run format      # Prettier (CI runs format:check)
 ```
 
 ---
 
 ## 🧪 Demonstrating Offline Behaviour
 
-1. **Go offline**: Airplane Mode on a device, or turn off the Mac's Wi-Fi when using the iOS Simulator. A red banner appears.
+1. **Go offline**: Airplane Mode on a device, or turn off the Mac's Wi-Fi when using the iOS Simulator. A "You're offline" notice appears.
 2. **Capture**: tap **+**, fill in a Daily Log or RFI, add a photo or video (📷 / 🎥 / 🖼️), save → card shows **Pending** with thumbnails.
 3. **Persistence**: kill and relaunch the app → captures are still there.
 4. **Reconnect**: turn the network back on → cards go **Syncing** (with an "Uploading media · 45%" bar) **→ Synced** automatically. Open a capture to view the photo or play the video; each file shows ☁️ Uploaded.

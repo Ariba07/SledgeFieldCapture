@@ -11,6 +11,7 @@ import {
 } from 'lucide-react-native';
 import {useSyncContext} from '../context/SyncContext';
 import {CaptureGrid} from '../components/CaptureGrid';
+import {StorageErrorBanner} from '../components/StorageErrorBanner';
 import {Button, ICON_STROKE, SectionHeader} from '../components/ui';
 import {MainTabScreenProps} from '../navigation/types';
 import {SyncService} from '../services/SyncService';
@@ -22,8 +23,15 @@ const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
 export const SyncScreen: React.FC<MainTabScreenProps<'Sync'>> = ({navigation}) => {
   const styles = useSyncScreenStyles();
   const {colors} = useTheme();
-  const {captures, progress, isOnline, isSyncing, retryCapture, flushPendingCaptures} =
-    useSyncContext();
+  const {
+    captures,
+    progress,
+    isOnline,
+    isSyncing,
+    storageError,
+    retryCapture,
+    flushPendingCaptures,
+  } = useSyncContext();
   const [simulateErrors, setSimulateErrors] = useState(SyncService.getSimulateServerErrors);
 
   const queue = captures.filter(c => c.syncStatus !== 'synced');
@@ -79,6 +87,8 @@ export const SyncScreen: React.FC<MainTabScreenProps<'Sync'>> = ({navigation}) =
       <Text style={styles.largeTitle} accessibilityRole="header">
         Sync
       </Text>
+
+      <StorageErrorBanner error={storageError} />
 
       <View style={styles.statusCard}>
         <View style={styles.statusRow}>

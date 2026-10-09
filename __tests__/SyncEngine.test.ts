@@ -279,6 +279,19 @@ describe('SyncEngine', () => {
     expect(store.data).toEqual([]);
   });
 
+  it('reports a failed write to device storage and clears it once a write succeeds', async () => {
+    const saveAll = jest.spyOn(store, 'saveAll').mockRejectedValueOnce(new Error('Disk full'));
+    await engine.add(makeCapture('a'));
+
+    expect(engine.getSnapshot().storageError).toBe('Disk full');
+    expect(engine.getSnapshot().captures).toHaveLength(1); // still in memory
+
+    await engine.update('a', {notes: 'retry write'});
+    expect(engine.getSnapshot().storageError).toBeNull();
+    expect(store.data[0].notes).toBe('retry write');
+    saveAll.mockRestore();
+  });
+
   describe('attachments', () => {
     const withMedia = () => ({
       ...makeCapture('a'),

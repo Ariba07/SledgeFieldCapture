@@ -28,6 +28,8 @@ export interface SyncSnapshot {
   isSyncing: boolean;
   /** Media upload progress (0…1) for the capture currently syncing. In memory only. */
   progress: Record<string, number>;
+  /** Set when the last write to device storage failed; cleared by the next successful write. */
+  storageError: string | null;
 }
 
 export interface SyncEngineOptions {
@@ -47,11 +49,13 @@ export class SyncEngine {
   private isOnline = false;
   private isSyncing = false;
   private progress: Record<string, number> = {};
+  private storageError: string | null = null;
   private snapshot: SyncSnapshot = {
     captures: [],
     isOnline: false,
     isSyncing: false,
     progress: {},
+    storageError: null,
   };
   private listeners = new Set<() => void>();
 
@@ -428,10 +432,23 @@ export class SyncEngine {
     this.emit();
   }
 
+  // Never rejects: the in-memory state stays authoritative and the next write
+  // retries the full snapshot. Failures are surfaced via `storageError`.
   private persist(): Promise<void> {
-    return this.store.saveAll(this.captures).catch(err => {
-      console.warn('[SyncEngine] failed to persist captures', err);
-    });
+    return this.store.saveAll(this.captures).then(
+      () => this.setStorageError(null),
+      err => {
+        console.warn('[SyncEngine] failed to persist captures', err);
+        this.setStorageError(err instanceof Error ? err.message : String(err));
+      },
+    );
+  }
+
+  private setStorageError(message: string | null) {
+    if (message !== this.storageError) {
+      this.storageError = message;
+      this.emit();
+    }
   }
 
   private setSyncing(syncing: boolean) {
@@ -447,6 +464,7 @@ export class SyncEngine {
       isOnline: this.isOnline,
       isSyncing: this.isSyncing,
       progress: this.progress,
+      storageError: this.storageError,
     };
     this.listeners.forEach(l => l());
   }
