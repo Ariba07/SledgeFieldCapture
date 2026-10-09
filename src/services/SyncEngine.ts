@@ -24,6 +24,8 @@ import {CaptureTransport, SyncError} from './SyncService';
 
 export interface SyncSnapshot {
   captures: FieldCapture[];
+  /** True once saved captures have been read from storage. */
+  isLoaded: boolean;
   isOnline: boolean;
   isSyncing: boolean;
   /** Media upload progress (0…1) for the capture currently syncing. In memory only. */
@@ -48,6 +50,7 @@ const DEFAULT_OPTIONS: SyncEngineOptions = {
 
 export class SyncEngine {
   private captures: FieldCapture[] = [];
+  private isLoaded = false;
   private isOnline = false;
   private isSyncing = false;
   private progress: Record<string, number> = {};
@@ -99,6 +102,7 @@ export class SyncEngine {
         syncStatus: c.syncStatus === 'syncing' ? 'pending' : c.syncStatus,
       };
     });
+    this.isLoaded = true;
     this.emit();
     if (stuck) {
       await this.persist();
@@ -470,6 +474,7 @@ export class SyncEngine {
   private emit() {
     this.snapshot = {
       captures: this.captures,
+      isLoaded: this.isLoaded,
       isOnline: this.isOnline,
       isSyncing: this.isSyncing,
       progress: this.progress,
