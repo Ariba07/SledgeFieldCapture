@@ -1,5 +1,6 @@
 import React, {useState} from 'react';
 import {FlatList, View} from 'react-native';
+import {useNavigation} from '@react-navigation/native';
 import {FieldCapture} from '../types';
 import {CaptureCard} from './CaptureCard';
 import {MAX_LIST_WIDTH, computeLayout, useLayout} from '../theme/layout';
@@ -8,7 +9,6 @@ import {captureGridStyles} from '../styles/components/CaptureGrid.styles';
 interface Props {
   data: FieldCapture[];
   progress: Record<string, number>;
-  onOpen: (id: string) => void;
   onRetry: (id: string) => void;
   header?: React.ReactElement;
   footer?: React.ReactElement;
@@ -19,7 +19,6 @@ interface Props {
 export const CaptureGrid: React.FC<Props> = ({
   data,
   progress,
-  onOpen,
   onRetry,
   header,
   footer,
@@ -29,6 +28,7 @@ export const CaptureGrid: React.FC<Props> = ({
   // Measure the wrapper, not the list: the wrapper's width comes from its
   // parent (which may sit beside a nav rail), so it can't feed back into
   // itself. Fall back to the window until the first layout pass.
+  const navigation = useNavigation();
   const windowLayout = useLayout();
   const [width, setWidth] = useState<number | null>(null);
   const {columns, gap, gutter, itemWidth} = width
@@ -58,7 +58,9 @@ export const CaptureGrid: React.FC<Props> = ({
             <CaptureCard
               capture={item}
               progress={progress[item.id]}
-              onPress={() => onOpen(item.id)}
+              onPress={() =>
+                navigation.navigate('CaptureDetail', {captureId: item.id})
+              }
               onRetry={onRetry}
               style={captureGridStyles.fill}
             />

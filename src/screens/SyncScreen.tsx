@@ -15,18 +15,75 @@ import {StorageErrorBanner} from '../components/StorageErrorBanner';
 import {Button, ICON_STROKE, SectionHeader} from '../components/ui';
 import {MainTabScreenProps} from '../navigation/types';
 import {SyncService} from '../services/SyncService';
-import {spacing, useTheme} from '../theme';
+import {Colors, spacing, useTheme} from '../theme';
+import {plural} from '../utils/helpers';
+import {MAX_ATTEMPTS} from '../services/SyncEngine';
 import {useSyncScreenStyles} from '../styles/screens/SyncScreen.styles';
 
-const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
+interface QueueStatus {
+  icon: LucideIcon;
+  color: string;
+  title: string;
+  detail: string;
+}
 
-export const SyncScreen: React.FC<MainTabScreenProps<'Sync'>> = ({
-  navigation,
-}) => {
+const describeQueue = (
+  isOnline: boolean,
+  isSyncing: boolean,
+  waiting: number,
+  failed: number,
+  colors: Colors,
+): QueueStatus => {
+  if (!isOnline) {
+    return {
+      icon: CloudOff,
+      color: colors.textSecondary,
+      title: 'Offline',
+      detail: waiting
+        ? `${plural(
+            waiting,
+            'capture',
+          )} will upload automatically when you reconnect.`
+        : 'Nothing waiting. New captures will be saved on this device.',
+    };
+  }
+  if (isSyncing) {
+    return {
+      icon: RefreshCw,
+      color: colors.status.syncing,
+      title: 'Syncing',
+      detail: `Uploading ${plural(waiting, 'capture')}…`,
+    };
+  }
+  if (failed) {
+    return {
+      icon: CircleAlert,
+      color: colors.status.error,
+      title: `${failed} failed`,
+      detail: `Stopped after ${MAX_ATTEMPTS} attempts. Retry below, or they will retry when you reconnect.`,
+    };
+  }
+  if (waiting) {
+    return {
+      icon: CloudUpload,
+      color: colors.status.pending,
+      title: `${waiting} waiting`,
+      detail: 'Retrying automatically.',
+    };
+  }
+  return {
+    icon: CloudCheck,
+    color: colors.status.synced,
+    title: 'All synced',
+    detail: 'Everything on this device has been uploaded.',
+  };
+};
+
+export const SyncScreen: React.FC<MainTabScreenProps<'Sync'>> = () => {
   const styles = useSyncScreenStyles();
   const {colors} = useTheme();
   const {
-    captures,
+    unsynced,
     progress,
     isOnline,
     isSyncing,
@@ -38,7 +95,7 @@ export const SyncScreen: React.FC<MainTabScreenProps<'Sync'>> = ({
     SyncService.getSimulateServerErrors,
   );
 
-  const queue = captures.filter(c => c.syncStatus !== 'synced');
+  const queue = unsynced;
   const errorCount = queue.filter(c => c.syncStatus === 'error').length;
   const canSync = isOnline && !isSyncing && queue.length > 0;
 
@@ -47,52 +104,13 @@ export const SyncScreen: React.FC<MainTabScreenProps<'Sync'>> = ({
     setSimulateErrors(on);
   };
 
-  const status: {
-    icon: LucideIcon;
-    color: string;
-    title: string;
-    detail: string;
-  } = !isOnline
-    ? {
-        icon: CloudOff,
-        color: colors.textSecondary,
-        title: 'Offline',
-        detail:
-          queue.length > 0
-            ? `${plural(
-                queue.length,
-                'capture',
-              )} will upload automatically when you reconnect.`
-            : 'Nothing waiting. New captures will be saved on this device.',
-      }
-    : isSyncing
-    ? {
-        icon: RefreshCw,
-        color: colors.status.syncing,
-        title: 'Syncing',
-        detail: `Uploading ${plural(queue.length, 'capture')}…`,
-      }
-    : errorCount > 0
-    ? {
-        icon: CircleAlert,
-        color: colors.status.error,
-        title: `${errorCount} failed`,
-        detail:
-          'Stopped after 3 attempts. Retry below, or they will retry when you reconnect.',
-      }
-    : queue.length > 0
-    ? {
-        icon: CloudUpload,
-        color: colors.status.pending,
-        title: `${queue.length} waiting`,
-        detail: 'Retrying automatically.',
-      }
-    : {
-        icon: CloudCheck,
-        color: colors.status.synced,
-        title: 'All synced',
-        detail: 'Everything on this device has been uploaded.',
-      };
+  const status = describeQueue(
+    isOnline,
+    isSyncing,
+    queue.length,
+    errorCount,
+    colors,
+  );
   const StatusIcon = status.icon;
 
   const header = (
@@ -156,7 +174,6 @@ export const SyncScreen: React.FC<MainTabScreenProps<'Sync'>> = ({
       <CaptureGrid
         data={queue}
         progress={progress}
-        onOpen={id => navigation.navigate('CaptureDetail', {captureId: id})}
         onRetry={retryCapture}
         header={header}
         footer={footer}

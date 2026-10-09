@@ -9,6 +9,7 @@ import {
   Button,
   CaptureTypeIcon,
   ICON_STROKE,
+  ProgressBar,
   SectionHeader,
 } from '../components/ui';
 import {CAPTURE_TYPE_LABELS, FieldCapture, PRIORITY_LABELS} from '../types';
@@ -88,33 +89,23 @@ export const CaptureDetailScreen: React.FC<
 
   const attachments = capture.attachments ?? [];
   const twoColumn = sizeClass === 'expanded' && attachments.length > 0;
-  const percent =
-    progress[capture.id] != null
-      ? Math.round(progress[capture.id] * 100)
-      : null;
-  const details: [string, string, string?][] = [
-    [
-      'Priority',
-      PRIORITY_LABELS[capture.priority],
-      colors.priority[capture.priority],
-    ],
-    ...(capture.workerCount
-      ? ([['Workers on site', String(capture.workerCount)]] as [
-          string,
-          string,
-        ][])
-      : []),
-    ...(capture.weather
-      ? ([['Weather', capture.weather]] as [string, string][])
-      : []),
-    ['Captured', formatTimestamp(capture.capturedAt)],
-    ...(capture.updatedAt
-      ? ([['Last edited', formatTimestamp(capture.updatedAt)]] as [
-          string,
-          string,
-        ][])
-      : []),
-  ];
+  const details = [
+    {
+      label: 'Priority',
+      value: PRIORITY_LABELS[capture.priority],
+      color: colors.priority[capture.priority],
+    },
+    capture.workerCount && {
+      label: 'Workers on site',
+      value: String(capture.workerCount),
+    },
+    capture.weather && {label: 'Weather', value: capture.weather},
+    {label: 'Captured', value: formatTimestamp(capture.capturedAt)},
+    capture.updatedAt && {
+      label: 'Last edited',
+      value: formatTimestamp(capture.updatedAt),
+    },
+  ].filter(Boolean) as {label: string; value: string; color?: string}[];
 
   return (
     <ScrollView
@@ -165,10 +156,9 @@ export const CaptureDetailScreen: React.FC<
               ]}>
               {statusDetail(capture, isOnline)}
             </Text>
-            {capture.syncStatus === 'syncing' && percent != null ? (
-              <View style={styles.progressTrack}>
-                <View style={[styles.progressFill, {width: `${percent}%`}]} />
-              </View>
+            {capture.syncStatus === 'syncing' &&
+            progress[capture.id] != null ? (
+              <ProgressBar progress={progress[capture.id]} />
             ) : null}
             {capture.syncStatus === 'error' ? (
               <Button
@@ -183,7 +173,7 @@ export const CaptureDetailScreen: React.FC<
           <View style={styles.section}>
             <SectionHeader title="Details" />
             <View style={styles.group}>
-              {details.map(([label, value, color], i) => (
+              {details.map(({label, value, color}, i) => (
                 <View
                   key={label}
                   style={[styles.row, i > 0 && styles.rowDivider]}>

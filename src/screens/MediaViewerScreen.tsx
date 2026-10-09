@@ -19,7 +19,7 @@ import {useSyncContext} from '../context/SyncContext';
 import {RootStackScreenProps} from '../navigation/types';
 import {Attachment} from '../types';
 import {attachmentUri} from '../services/MediaService';
-import {formatDuration} from '../utils/helpers';
+import {describeAttachment} from '../utils/helpers';
 import {spacing} from '../theme';
 import {useMediaViewerScreenStyles} from '../styles/screens/MediaViewerScreen.styles';
 
@@ -98,13 +98,7 @@ export const MediaViewerScreen: React.FC<
           ) : null}
           {current ? (
             <Text style={styles.caption}>
-              {current.kind === 'video'
-                ? `Video${
-                    current.durationSec != null
-                      ? ` · ${formatDuration(current.durationSec)}`
-                      : ''
-                  }`
-                : 'Photo'}
+              {describeAttachment(current, false)}
               {current.remoteUrl ? ' · Uploaded' : ' · Not uploaded yet'}
             </Text>
           ) : null}

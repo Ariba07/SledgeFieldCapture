@@ -1,4 +1,4 @@
-import React, {useMemo, useState} from 'react';
+import React, {useState} from 'react';
 import {Pressable, Text, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {ClipboardList, Plus} from 'lucide-react-native';
@@ -19,15 +19,11 @@ export const HomeScreen: React.FC<MainTabScreenProps<'Captures'>> = ({
 }) => {
   const styles = useHomeScreenStyles();
   const {colors} = useTheme();
-  const {captures, progress, isOnline, storageError, retryCapture} =
+  const {captures, unsynced, progress, isOnline, storageError, retryCapture} =
     useSyncContext();
   const {isCompact, gutter, insets} = useLayout();
   const [filter, setFilter] = useState<Filter>('all');
 
-  const unsynced = useMemo(
-    () => captures.filter(c => c.syncStatus !== 'synced'),
-    [captures],
-  );
   const syncedCount = captures.length - unsynced.length;
   const visible =
     filter === 'all'
@@ -115,7 +111,6 @@ export const HomeScreen: React.FC<MainTabScreenProps<'Captures'>> = ({
       <CaptureGrid
         data={visible}
         progress={progress}
-        onOpen={id => navigation.navigate('CaptureDetail', {captureId: id})}
         onRetry={retryCapture}
         header={header}
         empty={empty}

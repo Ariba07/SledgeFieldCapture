@@ -7,6 +7,7 @@
  */
 import {
   Asset,
+  ErrorCode,
   ImagePickerResponse,
   launchCamera,
   launchImageLibrary,
@@ -34,34 +35,34 @@ export const attachmentPath = (a: Attachment) =>
   `${ATTACHMENTS_DIR}/${a.fileName}`;
 export const attachmentUri = (a: Attachment) => `file://${attachmentPath(a)}`;
 
+const PHOTO_OPTIONS = {quality: 0.8, maxWidth: 2048, maxHeight: 2048} as const;
+const VIDEO_OPTIONS = {videoQuality: 'medium', formatAsMp4: true} as const;
+
+const ERROR_MESSAGES: Partial<Record<ErrorCode, string>> = {
+  camera_unavailable:
+    'No camera is available on this device. Use the library instead.',
+  permission: 'Camera or photo access is turned off. Enable it in Settings.',
+};
+
 const launch = (
   source: MediaSource,
   limit: number,
 ): Promise<ImagePickerResponse> => {
   switch (source) {
     case 'camera_photo':
-      return launchCamera({
-        mediaType: 'photo',
-        quality: 0.8,
-        maxWidth: 2048,
-        maxHeight: 2048,
-      });
+      return launchCamera({mediaType: 'photo', ...PHOTO_OPTIONS});
     case 'camera_video':
       return launchCamera({
         mediaType: 'video',
-        videoQuality: 'medium',
         durationLimit: MAX_VIDEO_SECONDS,
-        formatAsMp4: true,
+        ...VIDEO_OPTIONS,
       });
     case 'library':
       return launchImageLibrary({
         mediaType: 'mixed',
         selectionLimit: limit,
-        quality: 0.8,
-        maxWidth: 2048,
-        maxHeight: 2048,
-        videoQuality: 'medium',
-        formatAsMp4: true,
+        ...PHOTO_OPTIONS,
+        ...VIDEO_OPTIONS,
       });
   }
 };
@@ -117,19 +118,11 @@ export const MediaService = {
     if (res.didCancel) {
       return [];
     }
-    if (res.errorCode === 'camera_unavailable') {
-      throw new MediaError(
-        'No camera is available on this device. Use the library instead.',
-      );
-    }
-    if (res.errorCode === 'permission') {
-      throw new MediaError(
-        'Camera or photo access is turned off. Enable it in Settings.',
-      );
-    }
     if (res.errorCode) {
       throw new MediaError(
-        res.errorMessage ?? 'Could not open the camera or library.',
+        ERROR_MESSAGES[res.errorCode] ??
+          res.errorMessage ??
+          'Could not open the camera or library.',
       );
     }
 

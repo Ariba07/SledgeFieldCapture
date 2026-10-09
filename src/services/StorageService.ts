@@ -17,7 +17,7 @@ export interface CaptureStore {
 
 let writeChain: Promise<void> = Promise.resolve();
 
-export const StorageService: CaptureStore & {clearAll(): Promise<void>} = {
+export const StorageService: CaptureStore = {
   async getAll() {
     try {
       const raw = await AsyncStorage.getItem(STORAGE_KEY);
@@ -35,10 +35,5 @@ export const StorageService: CaptureStore & {clearAll(): Promise<void>} = {
     // Keep the chain alive even if this write fails; the caller still sees the error.
     writeChain = write.catch(() => {});
     return write;
-  },
-
-  async clearAll() {
-    await writeChain;
-    await AsyncStorage.removeItem(STORAGE_KEY);
   },
 };

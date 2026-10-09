@@ -58,12 +58,6 @@ export type CaptureDraft = Pick<
   | 'attachments'
 >;
 
-export interface AppState {
-  captures: FieldCapture[];
-  isOnline: boolean;
-  isSyncing: boolean;
-}
-
 export const CAPTURE_TYPE_LABELS: Record<CaptureType, string> = {
   daily_log: 'Daily log',
   rfi: 'RFI',

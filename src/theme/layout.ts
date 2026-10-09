@@ -59,11 +59,10 @@ export const computeLayout = (available: number) => {
 
 /** Window-level layout (window width minus safe-area insets). */
 export const useLayout = () => {
-  const {width, height} = useWindowDimensions();
+  const {width} = useWindowDimensions();
   const insets = useSafeAreaInsets();
   return {
     ...computeLayout(width - insets.left - insets.right),
-    isLandscape: width > height,
     insets,
   };
 };

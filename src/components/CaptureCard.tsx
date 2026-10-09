@@ -12,7 +12,7 @@ import {RotateCw} from 'lucide-react-native';
 import {FieldCapture, CAPTURE_TYPE_LABELS, PRIORITY_LABELS} from '../types';
 import {SyncBadge} from './SyncBadge';
 import {AttachmentThumb} from './AttachmentThumb';
-import {Button, CaptureTypeIcon} from './ui';
+import {Button, CaptureTypeIcon, ProgressBar} from './ui';
 import {formatTimestamp} from '../utils/helpers';
 import {useTheme} from '../theme';
 import {useCaptureCardStyles} from '../styles/components/CaptureCard.styles';
@@ -37,8 +37,6 @@ export const CaptureCard: React.FC<Props> = ({
   const {colors} = useTheme();
   const navigation = useNavigation();
   const attachments = capture.attachments ?? [];
-  const percent = progress != null ? Math.round(progress * 100) : null;
-  const showProgress = capture.syncStatus === 'syncing' && percent != null;
 
   return (
     <Pressable
@@ -96,13 +94,8 @@ export const CaptureCard: React.FC<Props> = ({
         </ScrollView>
       ) : null}
 
-      {showProgress ? (
-        <View style={styles.progressRow}>
-          <View style={styles.progressTrack}>
-            <View style={[styles.progressFill, {width: `${percent}%`}]} />
-          </View>
-          <Text style={styles.progressText}>{percent}%</Text>
-        </View>
+      {capture.syncStatus === 'syncing' && progress != null ? (
+        <ProgressBar progress={progress} showPercent />
       ) : null}
 
       <Text style={styles.meta} numberOfLines={1}>

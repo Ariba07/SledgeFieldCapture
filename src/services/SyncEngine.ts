@@ -38,8 +38,10 @@ export interface SyncEngineOptions {
   maxDelayMs: number;
 }
 
+export const MAX_ATTEMPTS = 3;
+
 const DEFAULT_OPTIONS: SyncEngineOptions = {
-  maxAttempts: 3,
+  maxAttempts: MAX_ATTEMPTS,
   baseDelayMs: 2000,
   maxDelayMs: 60_000,
 };
@@ -50,13 +52,7 @@ export class SyncEngine {
   private isSyncing = false;
   private progress: Record<string, number> = {};
   private storageError: string | null = null;
-  private snapshot: SyncSnapshot = {
-    captures: [],
-    isOnline: false,
-    isSyncing: false,
-    progress: {},
-    storageError: null,
-  };
+  private snapshot!: SyncSnapshot;
   private listeners = new Set<() => void>();
 
   private ready: Promise<void> | null = null;
@@ -72,14 +68,12 @@ export class SyncEngine {
     options: Partial<SyncEngineOptions> = {},
   ) {
     this.options = {...DEFAULT_OPTIONS, ...options};
+    this.emit();
   }
 
   start = (): Promise<void> => {
     this.stopped = false;
-    if (!this.ready) {
-      this.ready = this.load();
-    }
-    return this.ready.then(() => {
+    return this.ensureLoaded().then(() => {
       this.scheduleRetry();
       if (this.isOnline) {
         this.flush(true);
@@ -270,12 +264,10 @@ export class SyncEngine {
   }
 
   private async syncOne(id: string) {
-    this.patch(id, {syncStatus: 'syncing'});
-    await this.persist();
-    const capture = this.find(id);
-    if (!capture) {
+    if (!this.patch(id, {syncStatus: 'syncing'})) {
       return;
     }
+    await this.persist();
 
     try {
       await this.uploadAttachments(id);

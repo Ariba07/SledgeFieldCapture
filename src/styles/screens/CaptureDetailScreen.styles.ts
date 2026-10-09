@@ -31,14 +31,6 @@ export const useCaptureDetailScreenStyles = makeStyles(c => ({
     gap: spacing.sm,
   },
   statusDetail: {...type.subhead, color: c.textBody},
-  progressTrack: {
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: c.surfaceMuted,
-    overflow: 'hidden',
-    marginTop: spacing.xs,
-  },
-  progressFill: {height: 4, borderRadius: 2, backgroundColor: c.status.syncing},
   retryButton: {marginTop: spacing.sm},
   section: {},
   group: {

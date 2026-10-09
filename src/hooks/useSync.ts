@@ -40,10 +40,15 @@ export const useSync = () => {
   }, [engine]);
 
   const state = useSyncExternalStore(engine.subscribe, engine.getSnapshot);
+  const unsynced = useMemo(
+    () => state.captures.filter(c => c.syncStatus !== 'synced'),
+    [state.captures],
+  );
 
   return useMemo(
     () => ({
       ...state,
+      unsynced,
       addCapture: engine.add,
       retryCapture: engine.retry,
       updateCapture: async (id: string, changes: Partial<CaptureDraft>) => {
@@ -64,6 +69,6 @@ export const useSync = () => {
       },
       flushPendingCaptures: () => engine.flush(true),
     }),
-    [state, engine],
+    [state, unsynced, engine],
   );
 };

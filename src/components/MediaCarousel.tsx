@@ -12,7 +12,7 @@ import Video from 'react-native-video';
 import {Maximize2} from 'lucide-react-native';
 import {Attachment} from '../types';
 import {attachmentUri} from '../services/MediaService';
-import {formatBytes, formatDuration} from '../utils/helpers';
+import {describeAttachment} from '../utils/helpers';
 import {useTheme} from '../theme';
 import {
   useMediaCarouselStyles,
@@ -97,13 +97,7 @@ const MediaTile: React.FC<{
   const styles = useMediaCarouselStyles();
   const {colors} = useTheme();
   const uri = attachmentUri(a);
-  const meta = [
-    a.kind === 'video' ? 'Video' : 'Photo',
-    a.durationSec != null ? formatDuration(a.durationSec) : null,
-    a.sizeBytes ? formatBytes(a.sizeBytes) : null,
-  ]
-    .filter(Boolean)
-    .join(' · ');
+  const meta = describeAttachment(a);
 
   return (
     <View style={{width}}>

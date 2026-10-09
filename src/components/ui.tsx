@@ -1,12 +1,5 @@
 import React from 'react';
-import {
-  ActivityIndicator,
-  Pressable,
-  StyleProp,
-  Text,
-  View,
-  ViewStyle,
-} from 'react-native';
+import {Pressable, StyleProp, Text, View, ViewStyle} from 'react-native';
 import {
   CircleHelp,
   ClipboardCheck,
@@ -29,7 +22,7 @@ export const CAPTURE_TYPE_ICONS: Record<CaptureType, LucideIcon> = {
   inspection: ClipboardCheck,
 };
 
-type ButtonVariant = 'primary' | 'secondary' | 'destructive' | 'ghost';
+type ButtonVariant = 'primary' | 'secondary' | 'destructive';
 
 interface ButtonProps {
   title: string;
@@ -38,7 +31,6 @@ interface ButtonProps {
   size?: 'md' | 'sm';
   icon?: LucideIcon;
   disabled?: boolean;
-  loading?: boolean;
   style?: StyleProp<ViewStyle>;
   accessibilityLabel?: string;
 }
@@ -50,7 +42,6 @@ export const Button: React.FC<ButtonProps> = ({
   size = 'md',
   icon: Icon,
   disabled,
-  loading,
   style,
   accessibilityLabel,
 }) => {
@@ -60,37 +51,30 @@ export const Button: React.FC<ButtonProps> = ({
     primary: colors.onPrimary,
     secondary: colors.text,
     destructive: colors.danger,
-    ghost: colors.text,
   }[variant];
   const small = size === 'sm';
 
   return (
     <Pressable
       onPress={onPress}
-      disabled={disabled || loading}
+      disabled={disabled}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel ?? title}
-      accessibilityState={{disabled: !!(disabled || loading)}}
+      accessibilityState={{disabled: !!disabled}}
       style={({pressed}) => [
         styles.button,
         small && styles.buttonSmall,
         styles[variant],
         pressed && styles.pressed,
-        (disabled || loading) && styles.disabled,
+        disabled && styles.disabled,
         style,
       ]}>
-      {loading ? (
-        <ActivityIndicator size="small" color={fg} />
-      ) : (
-        <>
-          {Icon ? (
-            <Icon size={small ? 16 : 18} color={fg} strokeWidth={ICON_STROKE} />
-          ) : null}
-          <Text style={[small ? styles.labelSmall : styles.label, {color: fg}]}>
-            {title}
-          </Text>
-        </>
-      )}
+      {Icon ? (
+        <Icon size={small ? 16 : 18} color={fg} strokeWidth={ICON_STROKE} />
+      ) : null}
+      <Text style={[small ? styles.labelSmall : styles.label, {color: fg}]}>
+        {title}
+      </Text>
     </Pressable>
   );
 };
@@ -99,8 +83,7 @@ export const IconButton: React.FC<{
   icon: LucideIcon;
   onPress: () => void;
   accessibilityLabel: string;
-  color?: string;
-}> = ({icon: Icon, onPress, accessibilityLabel, color}) => {
+}> = ({icon: Icon, onPress, accessibilityLabel}) => {
   const styles = useUiStyles();
   const {colors} = useTheme();
   return (
@@ -113,7 +96,7 @@ export const IconButton: React.FC<{
         styles.iconButton,
         pressed && styles.iconButtonPressed,
       ]}>
-      <Icon size={22} color={color ?? colors.text} strokeWidth={ICON_STROKE} />
+      <Icon size={22} color={colors.text} strokeWidth={ICON_STROKE} />
     </Pressable>
   );
 };
@@ -136,15 +119,11 @@ export const CaptureTypeIcon: React.FC<{
   );
 };
 
-export const SectionHeader: React.FC<{
-  title: string;
-  right?: React.ReactNode;
-}> = ({title, right}) => {
+export const SectionHeader: React.FC<{title: string}> = ({title}) => {
   const styles = useUiStyles();
   return (
     <View style={styles.sectionHeader}>
       <Text style={styles.sectionTitle}>{title}</Text>
-      {right}
     </View>
   );
 };
@@ -191,3 +170,76 @@ export function SegmentedControl<T extends string>({
     </View>
   );
 }
+
+export const Chip: React.FC<{
+  label: string;
+  icon: LucideIcon;
+  selected: boolean;
+  onPress: () => void;
+}> = ({label, icon: Icon, selected, onPress}) => {
+  const styles = useUiStyles();
+  const {colors} = useTheme();
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="radio"
+      accessibilityState={{selected}}
+      style={[styles.chip, selected && styles.chipSelected]}>
+      <Icon
+        size={16}
+        color={selected ? colors.onPrimary : colors.textSecondary}
+        strokeWidth={ICON_STROKE}
+      />
+      <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
+        {label}
+      </Text>
+    </Pressable>
+  );
+};
+
+export const ProgressBar: React.FC<{
+  progress: number;
+  showPercent?: boolean;
+}> = ({progress, showPercent}) => {
+  const styles = useUiStyles();
+  const percent = Math.round(progress * 100);
+  return (
+    <View
+      style={styles.progressRow}
+      accessibilityLabel={`Uploading ${percent}%`}>
+      <View style={styles.progressTrack}>
+        <View style={[styles.progressFill, {width: `${percent}%`}]} />
+      </View>
+      {showPercent ? <Text style={styles.progressText}>{percent}%</Text> : null}
+    </View>
+  );
+};
+
+export const Banner: React.FC<{
+  tone: 'neutral' | 'danger';
+  icon: LucideIcon;
+  title: string;
+  detail: string;
+}> = ({tone, icon: Icon, title, detail}) => {
+  const styles = useUiStyles();
+  const {colors} = useTheme();
+  const danger = tone === 'danger';
+  return (
+    <View
+      style={[
+        styles.banner,
+        danger ? styles.bannerDanger : styles.bannerNeutral,
+      ]}
+      accessibilityRole="alert">
+      <Icon
+        size={18}
+        color={danger ? colors.danger : colors.textSecondary}
+        strokeWidth={ICON_STROKE}
+      />
+      <View style={styles.bannerText}>
+        <Text style={styles.bannerTitle}>{title}</Text>
+        <Text style={styles.bannerDetail}>{detail}</Text>
+      </View>
+    </View>
+  );
+};

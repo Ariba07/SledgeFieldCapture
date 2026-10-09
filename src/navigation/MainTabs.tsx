@@ -22,8 +22,7 @@ const SyncIcon = ({color, size}: TabIconProps) => (
 export const MainTabs: React.FC = () => {
   const {colors} = useTheme();
   const rail = useLayout().sizeClass === 'expanded';
-  const {captures} = useSyncContext();
-  const unsyncedCount = captures.filter(c => c.syncStatus !== 'synced').length;
+  const unsyncedCount = useSyncContext().unsynced.length;
 
   return (
     <Tab.Navigator

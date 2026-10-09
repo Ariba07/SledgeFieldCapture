@@ -1,5 +1,6 @@
 import 'react-native-get-random-values'; // polyfill for uuid
 import {v4 as uuidv4} from 'uuid';
+import {Attachment} from '../types';
 
 export const generateId = (): string => uuidv4();
 
@@ -42,3 +43,16 @@ export const formatDuration = (seconds: number): string => {
   const s = Math.round(seconds);
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 };
+
+export const plural = (n: number, word: string) =>
+  `${n} ${word}${n === 1 ? '' : 's'}`;
+
+/** "Video · 0:12 · 1.2 MB" */
+export const describeAttachment = (a: Attachment, withSize = true) =>
+  [
+    a.kind === 'video' ? 'Video' : 'Photo',
+    a.durationSec != null ? formatDuration(a.durationSec) : null,
+    withSize && a.sizeBytes ? formatBytes(a.sizeBytes) : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');

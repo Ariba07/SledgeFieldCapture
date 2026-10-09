@@ -4,7 +4,6 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
-  Pressable,
   ScrollView,
   Text,
   TextInput,
@@ -43,7 +42,7 @@ import {AttachmentThumb} from './AttachmentThumb';
 import {
   Button,
   CAPTURE_TYPE_ICONS,
-  ICON_STROKE,
+  Chip,
   IconButton,
   SegmentedControl,
 } from './ui';
@@ -218,31 +217,15 @@ export const CaptureForm: React.FC<Props> = ({initial, onSave, onCancel}) => {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.chipRow}
             style={styles.bleed}>
-            {CAPTURE_TYPES.map(t => {
-              const Icon = CAPTURE_TYPE_ICONS[t];
-              const selected = captureType === t;
-              return (
-                <Pressable
-                  key={t}
-                  onPress={() => setCaptureType(t)}
-                  accessibilityRole="radio"
-                  accessibilityState={{selected}}
-                  style={[styles.chip, selected && styles.chipSelected]}>
-                  <Icon
-                    size={16}
-                    color={selected ? colors.onPrimary : colors.textSecondary}
-                    strokeWidth={ICON_STROKE}
-                  />
-                  <Text
-                    style={[
-                      styles.chipText,
-                      selected && styles.chipTextSelected,
-                    ]}>
-                    {CAPTURE_TYPE_LABELS[t]}
-                  </Text>
-                </Pressable>
-              );
-            })}
+            {CAPTURE_TYPES.map(t => (
+              <Chip
+                key={t}
+                label={CAPTURE_TYPE_LABELS[t]}
+                icon={CAPTURE_TYPE_ICONS[t]}
+                selected={captureType === t}
+                onPress={() => setCaptureType(t)}
+              />
+            ))}
           </ScrollView>
 
           <Field
@@ -285,32 +268,17 @@ export const CaptureForm: React.FC<Props> = ({initial, onSave, onCancel}) => {
               />
               <FieldLabel text="Weather" />
               <View style={styles.wrapRow}>
-                {WEATHER.map(w => {
-                  const selected = weather === w.label;
-                  return (
-                    <Pressable
-                      key={w.label}
-                      onPress={() => setWeather(selected ? '' : w.label)}
-                      accessibilityRole="radio"
-                      accessibilityState={{selected}}
-                      style={[styles.chip, selected && styles.chipSelected]}>
-                      <w.icon
-                        size={16}
-                        color={
-                          selected ? colors.onPrimary : colors.textSecondary
-                        }
-                        strokeWidth={ICON_STROKE}
-                      />
-                      <Text
-                        style={[
-                          styles.chipText,
-                          selected && styles.chipTextSelected,
-                        ]}>
-                        {w.label}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
+                {WEATHER.map(w => (
+                  <Chip
+                    key={w.label}
+                    label={w.label}
+                    icon={w.icon}
+                    selected={weather === w.label}
+                    onPress={() =>
+                      setWeather(weather === w.label ? '' : w.label)
+                    }
+                  />
+                ))}
               </View>
             </>
           ) : null}

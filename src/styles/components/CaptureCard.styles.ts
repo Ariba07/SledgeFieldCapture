@@ -19,22 +19,6 @@ export const useCaptureCardStyles = makeStyles(c => ({
   thumbScroller: {marginHorizontal: -spacing.lg, flexGrow: 0},
   thumbRow: {gap: spacing.sm, paddingHorizontal: spacing.lg},
   thumbPressed: {opacity: 0.75},
-  progressRow: {flexDirection: 'row', alignItems: 'center', gap: spacing.sm},
-  progressTrack: {
-    flex: 1,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: c.surfaceMuted,
-    overflow: 'hidden',
-  },
-  progressFill: {height: 4, borderRadius: 2, backgroundColor: c.status.syncing},
-  progressText: {
-    ...type.caption,
-    color: c.textSecondary,
-    fontVariant: ['tabular-nums'],
-    minWidth: 32,
-    textAlign: 'right',
-  },
   meta: {...type.caption, color: c.textTertiary},
   errorRow: {
     flexDirection: 'row',
