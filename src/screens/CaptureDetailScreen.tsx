@@ -110,6 +110,8 @@ export const CaptureDetailScreen: React.FC<
   return (
     <ScrollView
       style={styles.screen}
+      showsVerticalScrollIndicator={false}
+      showsHorizontalScrollIndicator={false}
       contentContainerStyle={[
         styles.content,
         {

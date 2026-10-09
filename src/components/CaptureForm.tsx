@@ -209,6 +209,8 @@ export const CaptureForm: React.FC<Props> = ({initial, onSave, onCancel}) => {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView
           style={styles.flex}
+          showsVerticalScrollIndicator={false}
+          showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.scroll}
           keyboardShouldPersistTaps="handled">
           <FieldLabel text="Type" first />
