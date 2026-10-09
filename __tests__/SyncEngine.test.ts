@@ -424,6 +424,31 @@ describe('SyncEngine', () => {
       expect(files[1].remoteUrl).toBeUndefined();
     });
 
+    it('adds a photo to a synced capture that has a video, uploading only the new file', async () => {
+      engine.setOnline(true);
+      const video = {...makeAttachment('v1', 5000), kind: 'video' as const, mimeType: 'video/mp4'};
+      await engine.add({...makeCapture('a'), attachments: [video]});
+      await settle();
+      transport.succeed(); // video
+      await settle();
+      transport.succeed(); // record
+      await settle();
+      expect(statusOf(engine, 'a')).toBe('synced');
+
+      const current = engine.getSnapshot().captures[0];
+      await engine.update('a', {attachments: [...current.attachments!, makeAttachment('p1', 100)]});
+      await settle();
+
+      expect(transport.calls.map(c => [c.kind, c.id])).toEqual([['file', 'p1']]);
+      transport.succeed();
+      await settle();
+      expect(transport.calls.map(c => [c.kind, c.id])).toEqual([['record', 'a']]);
+      expect(transport.calls[0].payload!.attachments!.map(x => x.id)).toEqual(['v1', 'p1']);
+      transport.succeed();
+      await settle();
+      expect(statusOf(engine, 'a')).toBe('synced');
+    });
+
     it('upgrades captures saved before versioning', async () => {
       const legacyStore = new MemoryStore();
       const legacy = (status: SyncStatus) => {

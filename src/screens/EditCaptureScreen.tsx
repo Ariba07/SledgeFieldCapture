@@ -1,4 +1,5 @@
 import React from 'react';
+import {Alert} from 'react-native';
 import {CaptureForm} from '../components/CaptureForm';
 import {useSyncContext} from '../context/SyncContext';
 import {RootStackScreenProps} from '../navigation/types';
@@ -19,7 +20,14 @@ export const EditCaptureScreen: React.FC<RootStackScreenProps<'EditCapture'>> = 
 
   const handleSave = async (draft: CaptureDraft) => {
     navigation.goBack();
-    await updateCapture(initial.id, draft);
+    try {
+      await updateCapture(initial.id, draft);
+    } catch (err) {
+      Alert.alert(
+        "Couldn't save changes",
+        err instanceof Error ? err.message : 'Something went wrong. Please try again.',
+      );
+    }
   };
 
   return <CaptureForm initial={initial} onSave={handleSave} onCancel={navigation.goBack} />;
