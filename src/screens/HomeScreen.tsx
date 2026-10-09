@@ -1,236 +1,179 @@
-import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  TouchableOpacity,
-  StatusBar,
-} from 'react-native';
+import React, {useMemo, useState} from 'react';
+import {FlatList, Pressable, Text, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
+import {ClipboardList, Plus} from 'lucide-react-native';
 import {useSyncContext} from '../context/SyncContext';
 import {CaptureCard} from '../components/CaptureCard';
 import {NetworkBanner} from '../components/NetworkBanner';
+import {Button, ICON_STROKE, SegmentedControl} from '../components/ui';
 import {MainTabScreenProps} from '../navigation/types';
+import {makeStyles, radius, spacing, type, useTheme} from '../theme';
 
-export const HomeScreen: React.FC<MainTabScreenProps<'Captures'>> = ({
-  navigation,
-}) => {
-  const {
-    captures,
-    progress,
-    isOnline,
-    isSyncing,
-    retryCapture,
-    deleteCapture,
-    flushPendingCaptures,
-  } = useSyncContext();
+type Filter = 'all' | 'unsynced' | 'synced';
 
-  const pendingCount = captures.filter(
-    c => c.syncStatus === 'pending' || c.syncStatus === 'error',
-  ).length;
-  const syncedCount = captures.filter(c => c.syncStatus === 'synced').length;
+export const HomeScreen: React.FC<MainTabScreenProps<'Captures'>> = ({navigation}) => {
+  const styles = useStyles();
+  const {colors} = useTheme();
+  const {captures, progress, isOnline, retryCapture} = useSyncContext();
+  const [filter, setFilter] = useState<Filter>('all');
 
-  const renderEmpty = () => (
-    <View style={styles.empty}>
-      <Text style={styles.emptyIcon}>📋</Text>
-      <Text style={styles.emptyTitle}>No captures yet</Text>
-      <Text style={styles.emptySubtitle}>
-        Tap the + button to record a field observation
-      </Text>
+  const unsynced = useMemo(() => captures.filter(c => c.syncStatus !== 'synced'), [captures]);
+  const syncedCount = captures.length - unsynced.length;
+  const visible =
+    filter === 'all'
+      ? captures
+      : filter === 'unsynced'
+      ? unsynced
+      : captures.filter(c => c.syncStatus === 'synced');
+
+  const openNew = () => navigation.navigate('NewCapture');
+
+  const header = (
+    <View style={styles.headerBlock}>
+      <View style={styles.titleRow}>
+        <Text style={styles.largeTitle} accessibilityRole="header">
+          Captures
+        </Text>
+        <View style={styles.connection}>
+          <View
+            style={[
+              styles.dot,
+              {backgroundColor: isOnline ? colors.status.synced : colors.textTertiary},
+            ]}
+          />
+          <Text style={styles.connectionText}>{isOnline ? 'Online' : 'Offline'}</Text>
+        </View>
+      </View>
+
+      <NetworkBanner isOnline={isOnline} pendingCount={unsynced.length} />
+
+      {captures.length > 0 ? (
+        <SegmentedControl<Filter>
+          value={filter}
+          onChange={setFilter}
+          segments={[
+            {value: 'all', label: `All ${captures.length}`},
+            {value: 'unsynced', label: `Not synced ${unsynced.length}`},
+            {value: 'synced', label: `Synced ${syncedCount}`},
+          ]}
+        />
+      ) : null}
     </View>
   );
 
+  const empty =
+    captures.length === 0 ? (
+      <View style={styles.empty}>
+        <View style={styles.emptyIcon}>
+          <ClipboardList size={28} color={colors.primary} strokeWidth={ICON_STROKE} />
+        </View>
+        <Text style={styles.emptyTitle}>No captures yet</Text>
+        <Text style={styles.emptyBody}>
+          Record daily logs, RFIs, punch items and issues on site — with or without
+          signal.
+        </Text>
+        <Button title="New capture" icon={Plus} onPress={openNew} style={styles.emptyButton} />
+      </View>
+    ) : (
+      <Text style={styles.filterEmpty}>
+        {filter === 'unsynced' ? 'Everything is synced.' : 'Nothing has synced yet.'}
+      </Text>
+    );
+
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
-      <StatusBar barStyle="light-content" />
-
-      {/* Slide-in network banner */}
-      <NetworkBanner
-        isOnline={isOnline}
-        isSyncing={isSyncing}
-        pendingCount={pendingCount}
-      />
-
-      {/* ── Header ── */}
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.appName}>⚡ Sledge</Text>
-          <Text style={styles.headerSub}>Field Capture</Text>
-        </View>
-
-        {/* Online / Offline pill */}
-        <View
-          style={[
-            styles.statusPill,
-            isOnline ? styles.statusPillOnline : styles.statusPillOffline,
-          ]}>
-          <View
-            style={[
-              styles.statusDot,
-              isOnline ? styles.statusDotOnline : styles.statusDotOffline,
-            ]}
-          />
-          <Text
-            style={[
-              styles.statusLabel,
-              isOnline ? styles.statusLabelOnline : styles.statusLabelOffline,
-            ]}>
-            {isOnline ? 'Online' : 'Offline'}
-          </Text>
-        </View>
-      </View>
-
-      {/* ── Stats row ── */}
-      <View style={styles.statsRow}>
-        <View style={styles.statBox}>
-          <Text style={styles.statValue}>{captures.length}</Text>
-          <Text style={styles.statLabel}>Total</Text>
-        </View>
-        <View style={styles.statBox}>
-          <Text style={[styles.statValue, styles.pendingColor]}>
-            {pendingCount}
-          </Text>
-          <Text style={styles.statLabel}>Pending</Text>
-        </View>
-        <View style={styles.statBox}>
-          <Text style={[styles.statValue, styles.syncedColor]}>
-            {syncedCount}
-          </Text>
-          <Text style={styles.statLabel}>Synced</Text>
-        </View>
-
-        {/* Manual sync button */}
-        {isOnline && pendingCount > 0 && !isSyncing && (
-          <TouchableOpacity
-            style={styles.syncNowBtn}
-            onPress={flushPendingCaptures}
-            accessibilityLabel="Sync now">
-            <Text style={styles.syncNowText}>Sync now</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-
-      {/* ── Capture list ── */}
       <FlatList
-        data={captures}
+        data={visible}
         keyExtractor={item => item.id}
         extraData={progress}
+        ListHeaderComponent={header}
+        ListEmptyComponent={empty}
+        ItemSeparatorComponent={Separator}
         renderItem={({item}) => (
           <CaptureCard
             capture={item}
             progress={progress[item.id]}
-            onPress={() =>
-              navigation.navigate('CaptureDetail', {captureId: item.id})
-            }
+            onPress={() => navigation.navigate('CaptureDetail', {captureId: item.id})}
             onRetry={retryCapture}
-            onDelete={deleteCapture}
           />
         )}
         contentContainerStyle={styles.list}
-        ListEmptyComponent={renderEmpty}
         showsVerticalScrollIndicator={false}
       />
 
-      {/* ── FAB ── */}
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={() => navigation.navigate('NewCapture')}
-        accessibilityLabel="New capture">
-        <Text style={styles.fabIcon}>+</Text>
-      </TouchableOpacity>
-
+      {captures.length > 0 ? (
+        <Pressable
+          onPress={openNew}
+          accessibilityRole="button"
+          accessibilityLabel="New capture"
+          style={({pressed}) => [styles.fab, pressed && styles.fabPressed]}>
+          <Plus size={20} color={colors.onPrimary} strokeWidth={2.5} />
+          <Text style={styles.fabLabel}>New capture</Text>
+        </Pressable>
+      ) : null}
     </SafeAreaView>
   );
 };
 
-const styles = StyleSheet.create({
-  safe: {flex: 1, backgroundColor: '#0F172A'},
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 12,
-  },
-  appName: {
-    fontSize: 24,
-    fontWeight: '900',
-    color: '#F1F5F9',
-    letterSpacing: -0.5,
-  },
-  headerSub: {fontSize: 13, color: '#64748B', marginTop: 1},
-  statusPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    gap: 6,
-  },
-  statusDot: {width: 7, height: 7, borderRadius: 4},
-  statusLabel: {fontSize: 13, fontWeight: '700'},
-  statusPillOnline: {backgroundColor: '#064E3B'},
-  statusPillOffline: {backgroundColor: '#450A0A'},
-  statusDotOnline: {backgroundColor: '#34D399'},
-  statusDotOffline: {backgroundColor: '#F87171'},
-  statusLabelOnline: {color: '#6EE7B7'},
-  statusLabelOffline: {color: '#FCA5A5'},
-  pendingColor: {color: '#FBBF24'},
-  syncedColor: {color: '#34D399'},
-  statsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: '#1E293B',
-    gap: 20,
-  },
-  statBox: {alignItems: 'center'},
-  statValue: {fontSize: 22, fontWeight: '800', color: '#F1F5F9'},
-  statLabel: {fontSize: 11, color: '#64748B', marginTop: 1},
-  syncNowBtn: {
-    marginLeft: 'auto',
-    backgroundColor: '#1D4ED8',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 10,
-  },
-  syncNowText: {color: '#BFDBFE', fontWeight: '700', fontSize: 13},
-  list: {padding: 16, flexGrow: 1},
+const Separator = () => <View style={{height: spacing.md}} />;
+
+const useStyles = makeStyles(c => ({
+  safe: {flex: 1, backgroundColor: c.background},
+  list: {paddingHorizontal: spacing.lg, paddingBottom: 112, flexGrow: 1},
+  headerBlock: {gap: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.lg},
+  titleRow: {flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between'},
+  largeTitle: {...type.largeTitle, color: c.text},
+  connection: {flexDirection: 'row', alignItems: 'center', gap: 6},
+  dot: {width: 8, height: 8, borderRadius: 4},
+  connectionText: {...type.footnote, color: c.textSecondary},
   empty: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingTop: 80,
+    paddingHorizontal: spacing.xl,
+    paddingBottom: 80,
   },
-  emptyIcon: {fontSize: 48, marginBottom: 12},
-  emptyTitle: {fontSize: 18, fontWeight: '700', color: '#475569'},
-  emptySubtitle: {
-    fontSize: 14,
-    color: '#334155',
-    marginTop: 6,
+  emptyIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: c.surfaceMuted,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.lg,
+  },
+  emptyTitle: {...type.title, color: c.text},
+  emptyBody: {
+    ...type.callout,
+    color: c.textBody,
     textAlign: 'center',
-    paddingHorizontal: 32,
+    marginTop: spacing.sm,
+    maxWidth: 300,
+  },
+  emptyButton: {marginTop: spacing.xl, alignSelf: 'stretch'},
+  filterEmpty: {
+    ...type.callout,
+    color: c.textTertiary,
+    textAlign: 'center',
+    marginTop: spacing.xxl,
   },
   fab: {
     position: 'absolute',
-    right: 20,
-    bottom: 20,
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: '#3B82F6',
+    right: spacing.lg,
+    bottom: spacing.lg,
+    height: 52,
+    paddingHorizontal: spacing.xl - 4,
+    borderRadius: radius.pill,
+    backgroundColor: c.primary,
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#3B82F6',
-    shadowOffset: {width: 0, height: 6},
-    shadowOpacity: 0.6,
-    shadowRadius: 12,
-    elevation: 8,
+    gap: spacing.sm,
+    shadowColor: '#000',
+    shadowOpacity: 0.18,
+    shadowRadius: 10,
+    shadowOffset: {width: 0, height: 4},
+    elevation: 4,
   },
-  fabIcon: {fontSize: 28, color: '#fff', fontWeight: '300', lineHeight: 34},
-});
+  fabPressed: {opacity: 0.85},
+  fabLabel: {...type.headline, color: c.onPrimary},
+}));

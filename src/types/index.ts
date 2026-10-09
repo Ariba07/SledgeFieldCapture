@@ -60,15 +60,15 @@ export interface AppState {
 // ── Display helpers ───────────────────────────────────────────────────────────
 
 export const CAPTURE_TYPE_LABELS: Record<CaptureType, string> = {
-  daily_log:  '📋 Daily Log',
-  rfi:        '❓ RFI',
-  punchlist:  '✅ Punchlist',
-  issue:      '⚠️ Issue',
-  inspection: '🔍 Inspection',
+  daily_log:  'Daily log',
+  rfi:        'RFI',
+  punchlist:  'Punch item',
+  issue:      'Issue',
+  inspection: 'Inspection',
 };
 
-export const PRIORITY_LABELS: Record<Priority, {label: string; color: string}> = {
-  low:    {label: 'Low',    color: '#6B7280'},
-  medium: {label: 'Medium', color: '#F59E0B'},
-  high:   {label: 'High',   color: '#EF4444'},
+export const PRIORITY_LABELS: Record<Priority, string> = {
+  low:    'Low',
+  medium: 'Medium',
+  high:   'High',
 };

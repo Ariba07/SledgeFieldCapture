@@ -1,177 +1,181 @@
 import React, {useState} from 'react';
-import {
-  Switch,
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  TouchableOpacity,
-  ActivityIndicator,
-} from 'react-native';
+import {FlatList, Switch, Text, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
+import {
+  CircleAlert,
+  CloudCheck,
+  CloudOff,
+  CloudUpload,
+  LucideIcon,
+  RefreshCw,
+} from 'lucide-react-native';
 import {useSyncContext} from '../context/SyncContext';
 import {CaptureCard} from '../components/CaptureCard';
+import {Button, ICON_STROKE, SectionHeader} from '../components/ui';
 import {MainTabScreenProps} from '../navigation/types';
 import {SyncService} from '../services/SyncService';
+import {makeStyles, radius, spacing, type, useTheme} from '../theme';
 
-export const SyncScreen: React.FC<MainTabScreenProps<'Sync'>> = ({
-  navigation,
-}) => {
-  const {
-    captures,
-    progress,
-    isOnline,
-    isSyncing,
-    retryCapture,
-    deleteCapture,
-    flushPendingCaptures,
-  } = useSyncContext();
-  const [simulateErrors, setSimulateErrors] = useState(
-    SyncService.getSimulateServerErrors,
-  );
+const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
+
+export const SyncScreen: React.FC<MainTabScreenProps<'Sync'>> = ({navigation}) => {
+  const styles = useStyles();
+  const {colors} = useTheme();
+  const {captures, progress, isOnline, isSyncing, retryCapture, flushPendingCaptures} =
+    useSyncContext();
+  const [simulateErrors, setSimulateErrors] = useState(SyncService.getSimulateServerErrors);
+
+  const queue = captures.filter(c => c.syncStatus !== 'synced');
+  const errorCount = queue.filter(c => c.syncStatus === 'error').length;
+  const canSync = isOnline && !isSyncing && queue.length > 0;
 
   const toggleSimulateErrors = (on: boolean) => {
     SyncService.setSimulateServerErrors(on);
     setSimulateErrors(on);
   };
 
-  const queue = captures.filter(c => c.syncStatus !== 'synced');
-  const errorCount = queue.filter(c => c.syncStatus === 'error').length;
-  const canSync = isOnline && !isSyncing && queue.length > 0;
+  const status: {icon: LucideIcon; color: string; title: string; detail: string} = !isOnline
+    ? {
+        icon: CloudOff,
+        color: colors.textSecondary,
+        title: 'Offline',
+        detail:
+          queue.length > 0
+            ? `${plural(queue.length, 'capture')} will upload automatically when you reconnect.`
+            : 'Nothing waiting. New captures will be saved on this device.',
+      }
+    : isSyncing
+    ? {
+        icon: RefreshCw,
+        color: colors.status.syncing,
+        title: 'Syncing',
+        detail: `Uploading ${plural(queue.length, 'capture')}…`,
+      }
+    : errorCount > 0
+    ? {
+        icon: CircleAlert,
+        color: colors.status.error,
+        title: `${errorCount} failed`,
+        detail: 'Stopped after 3 attempts. Retry below, or they will retry when you reconnect.',
+      }
+    : queue.length > 0
+    ? {
+        icon: CloudUpload,
+        color: colors.status.pending,
+        title: `${queue.length} waiting`,
+        detail: 'Retrying automatically.',
+      }
+    : {
+        icon: CloudCheck,
+        color: colors.status.synced,
+        title: 'All synced',
+        detail: 'Everything on this device has been uploaded.',
+      };
+  const StatusIcon = status.icon;
 
-  const statusText = isSyncing
-    ? 'Syncing…'
-    : !isOnline
-    ? 'Offline — captures will sync when you reconnect'
-    : queue.length === 0
-    ? 'All captures synced'
-    : `${queue.length} waiting to sync`;
+  const header = (
+    <View style={styles.headerBlock}>
+      <Text style={styles.largeTitle} accessibilityRole="header">
+        Sync
+      </Text>
+
+      <View style={styles.statusCard}>
+        <View style={styles.statusRow}>
+          <StatusIcon size={24} color={status.color} strokeWidth={ICON_STROKE} />
+          <View style={styles.statusText}>
+            <Text style={styles.statusTitle}>{status.title}</Text>
+            <Text style={styles.statusDetail}>{status.detail}</Text>
+          </View>
+        </View>
+        {queue.length > 0 ? (
+          <Button
+            title="Sync now"
+            icon={RefreshCw}
+            variant="secondary"
+            onPress={flushPendingCaptures}
+            disabled={!canSync}
+          />
+        ) : null}
+      </View>
+
+      {queue.length > 0 ? <SectionHeader title={`Queue · ${queue.length}`} /> : null}
+    </View>
+  );
+
+  const footer = (
+    <View style={styles.footerBlock}>
+      <SectionHeader title="Testing" />
+      <View style={styles.settingRow}>
+        <View style={styles.settingText}>
+          <Text style={styles.settingTitle}>Simulate server errors</Text>
+          <Text style={styles.settingDetail}>
+            Uploads fail with a 503 so you can see retries and the failed state.
+          </Text>
+        </View>
+        <Switch
+          value={simulateErrors}
+          onValueChange={toggleSimulateErrors}
+          accessibilityLabel="Simulate server errors"
+        />
+      </View>
+    </View>
+  );
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Sync Queue</Text>
-        <View style={styles.statusRow}>
-          {isSyncing ? (
-            <ActivityIndicator size="small" color="#60A5FA" />
-          ) : (
-            <View
-              style={[
-                styles.statusDot,
-                isOnline ? styles.statusDotOnline : styles.statusDotOffline,
-              ]}
-            />
-          )}
-          <Text style={styles.statusText}>{statusText}</Text>
-        </View>
-        {errorCount > 0 && (
-          <Text style={styles.errorText}>
-            {errorCount} failed after max retries — tap Retry on each item
-          </Text>
-        )}
-
-        <TouchableOpacity
-          style={[styles.syncBtn, !canSync && styles.syncBtnDisabled]}
-          onPress={flushPendingCaptures}
-          disabled={!canSync}
-          accessibilityLabel="Sync now">
-          <Text style={[styles.syncBtnText, !canSync && styles.syncBtnTextDisabled]}>
-            Sync now
-          </Text>
-        </TouchableOpacity>
-
-        <View style={styles.demoRow}>
-          <View style={styles.demoTextCol}>
-            <Text style={styles.demoTitle}>Simulate server errors</Text>
-            <Text style={styles.demoHint}>
-              Demo only — uploads fail with 503 so you can see retry and error states
-            </Text>
-          </View>
-          <Switch
-            value={simulateErrors}
-            onValueChange={toggleSimulateErrors}
-            trackColor={{true: '#B91C1C', false: '#334155'}}
-            accessibilityLabel="Simulate server errors"
-          />
-        </View>
-      </View>
-
       <FlatList
         data={queue}
         keyExtractor={item => item.id}
         extraData={progress}
+        ListHeaderComponent={header}
+        ListFooterComponent={footer}
+        ItemSeparatorComponent={Separator}
         renderItem={({item}) => (
           <CaptureCard
             capture={item}
             progress={progress[item.id]}
-            onPress={() =>
-              navigation.navigate('CaptureDetail', {captureId: item.id})
-            }
+            onPress={() => navigation.navigate('CaptureDetail', {captureId: item.id})}
             onRetry={retryCapture}
-            onDelete={deleteCapture}
           />
         )}
         contentContainerStyle={styles.list}
-        ListEmptyComponent={
-          <View style={styles.empty}>
-            <Text style={styles.emptyIcon}>✅</Text>
-            <Text style={styles.emptyTitle}>Nothing to sync</Text>
-          </View>
-        }
         showsVerticalScrollIndicator={false}
       />
     </SafeAreaView>
   );
 };
 
-const styles = StyleSheet.create({
-  safe: {flex: 1, backgroundColor: '#0F172A'},
-  header: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderColor: '#1E293B',
+const Separator = () => <View style={{height: spacing.md}} />;
+
+const useStyles = makeStyles(c => ({
+  safe: {flex: 1, backgroundColor: c.background},
+  list: {paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl, flexGrow: 1},
+  headerBlock: {gap: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.xs},
+  largeTitle: {...type.largeTitle, color: c.text},
+  statusCard: {
+    backgroundColor: c.surface,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: c.border,
+    padding: spacing.lg,
+    gap: spacing.lg,
   },
-  title: {
-    fontSize: 24,
-    fontWeight: '900',
-    color: '#F1F5F9',
-    letterSpacing: -0.5,
-    marginBottom: 10,
-  },
-  statusRow: {flexDirection: 'row', alignItems: 'center', gap: 8},
-  statusDot: {width: 8, height: 8, borderRadius: 4},
-  statusDotOnline: {backgroundColor: '#34D399'},
-  statusDotOffline: {backgroundColor: '#F87171'},
-  statusText: {fontSize: 14, color: '#CBD5E1', flex: 1},
-  errorText: {fontSize: 12, color: '#FCA5A5', marginTop: 8},
-  syncBtn: {
-    marginTop: 14,
-    backgroundColor: '#1D4ED8',
-    paddingVertical: 12,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-  syncBtnDisabled: {backgroundColor: '#1E293B'},
-  syncBtnText: {color: '#BFDBFE', fontWeight: '700', fontSize: 15},
-  syncBtnTextDisabled: {color: '#475569'},
-  demoRow: {
+  statusRow: {flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md},
+  statusText: {flex: 1},
+  statusTitle: {...type.title, color: c.text},
+  statusDetail: {...type.subhead, color: c.textBody, marginTop: 2},
+  footerBlock: {marginTop: spacing.xxl},
+  settingRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    marginTop: 14,
-    padding: 12,
-    borderRadius: 12,
+    gap: spacing.md,
+    backgroundColor: c.surface,
+    borderRadius: radius.md,
     borderWidth: 1,
-    borderStyle: 'dashed',
-    borderColor: '#334155',
+    borderColor: c.border,
+    padding: spacing.lg,
   },
-  demoTextCol: {flex: 1},
-  demoTitle: {fontSize: 14, fontWeight: '700', color: '#E2E8F0'},
-  demoHint: {fontSize: 11, color: '#64748B', marginTop: 2},
-  list: {padding: 16, flexGrow: 1},
-  empty: {flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 80},
-  emptyIcon: {fontSize: 48, marginBottom: 12},
-  emptyTitle: {fontSize: 18, fontWeight: '700', color: '#475569'},
-});
+  settingText: {flex: 1},
+  settingTitle: {...type.callout, fontWeight: '500', color: c.text},
+  settingDetail: {...type.footnote, color: c.textSecondary, marginTop: 2},
+}));

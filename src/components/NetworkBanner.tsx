@@ -1,70 +1,50 @@
 import React from 'react';
-import {Text, StyleSheet, Animated} from 'react-native';
+import {Text, View} from 'react-native';
+import {CloudOff} from 'lucide-react-native';
+import {makeStyles, radius, spacing, type, useTheme} from '../theme';
+import {ICON_STROKE} from './ui';
 
 interface Props {
   isOnline: boolean;
-  isSyncing: boolean;
   pendingCount: number;
 }
 
-export const NetworkBanner: React.FC<Props> = ({
-  isOnline,
-  isSyncing,
-  pendingCount,
-}) => {
-  const slideAnim = React.useRef(new Animated.Value(-50)).current;
-  const wasOnline = React.useRef<boolean | null>(null);
+/** Persistent while offline, so it's always clear why nothing is uploading. */
+export const NetworkBanner: React.FC<Props> = ({isOnline, pendingCount}) => {
+  const styles = useStyles();
+  const {colors} = useTheme();
+  if (isOnline) {
+    return null;
+  }
 
-  React.useEffect(() => {
-    if (wasOnline.current === null) {
-      wasOnline.current = isOnline;
-      return;
-    }
-
-    if (wasOnline.current !== isOnline) {
-      wasOnline.current = isOnline;
-      // Animate banner in/out on network change
-      Animated.sequence([
-        Animated.timing(slideAnim, {
-          toValue: 0,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-        Animated.delay(2500),
-        Animated.timing(slideAnim, {
-          toValue: -50,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-      ]).start();
-    }
-  }, [isOnline, slideAnim]);
-
-  const bg = isOnline ? '#10B981' : '#EF4444';
-  const label = isOnline
-    ? isSyncing
-      ? `Syncing ${pendingCount} item${pendingCount !== 1 ? 's' : ''}…`
-      : 'Back online – all clear!'
-    : `Offline · ${pendingCount} item${pendingCount !== 1 ? 's' : ''} queued`;
+  const detail =
+    pendingCount > 0
+      ? `${pendingCount} ${pendingCount === 1 ? 'capture' : 'captures'} will upload when you reconnect.`
+      : 'New captures are saved on this device and upload when you reconnect.';
 
   return (
-    <Animated.View
-      style={[styles.banner, {backgroundColor: bg, transform: [{translateY: slideAnim}]}]}>
-      <Text style={styles.text}>{label}</Text>
-    </Animated.View>
+    <View style={styles.banner} accessibilityRole="alert">
+      <CloudOff size={18} color={colors.textSecondary} strokeWidth={ICON_STROKE} />
+      <View style={styles.text}>
+        <Text style={styles.title}>You're offline</Text>
+        <Text style={styles.detail}>{detail}</Text>
+      </View>
+    </View>
   );
 };
 
-const styles = StyleSheet.create({
+const useStyles = makeStyles(c => ({
   banner: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    paddingTop: 12,
-    paddingBottom: 10,
-    alignItems: 'center',
-    zIndex: 100,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.md,
+    padding: spacing.md,
+    borderRadius: radius.md,
+    backgroundColor: c.surface,
+    borderWidth: 1,
+    borderColor: c.border,
   },
-  text: {color: '#fff', fontWeight: '700', fontSize: 13},
-});
+  text: {flex: 1},
+  title: {...type.label, color: c.text},
+  detail: {...type.footnote, color: c.textBody, marginTop: 1},
+}));

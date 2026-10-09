@@ -1,56 +1,78 @@
 import React, {useEffect, useRef, useState} from 'react';
 import {
   ActivityIndicator,
-  View,
-  Text,
-  TextInput,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
+  Alert,
   KeyboardAvoidingView,
   Platform,
-  Alert,
+  Pressable,
+  ScrollView,
+  Text,
+  TextInput,
+  TextInputProps,
+  View,
 } from 'react-native';
+import {SafeAreaView} from 'react-native-safe-area-context';
+import {
+  Camera,
+  Cloud,
+  CloudRain,
+  Images,
+  LucideIcon,
+  Snowflake,
+  Sun,
+  Thermometer,
+  Video,
+  Wind,
+  X,
+} from 'lucide-react-native';
 import {
   Attachment,
-  FieldCapture,
-  CaptureType,
-  Priority,
   CAPTURE_TYPE_LABELS,
+  CaptureType,
+  FieldCapture,
   PRIORITY_LABELS,
+  Priority,
 } from '../types';
 import {generateId} from '../utils/helpers';
-import {
-  MAX_ATTACHMENTS,
-  MediaService,
-  MediaSource,
-} from '../services/MediaService';
+import {MAX_ATTACHMENTS, MediaService, MediaSource} from '../services/MediaService';
 import {AttachmentThumb} from './AttachmentThumb';
+import {Button, CAPTURE_TYPE_ICONS, ICON_STROKE, IconButton, SegmentedControl} from './ui';
+import {TOUCH_TARGET, makeStyles, radius, spacing, type, useTheme} from '../theme';
 
 interface Props {
   onSave: (capture: FieldCapture) => void;
   onCancel: () => void;
 }
 
-const CAPTURE_TYPES: CaptureType[] = [
-  'daily_log',
-  'rfi',
-  'punchlist',
-  'issue',
-  'inspection',
-];
-
+const CAPTURE_TYPES: CaptureType[] = ['daily_log', 'rfi', 'punchlist', 'issue', 'inspection'];
 const PRIORITIES: Priority[] = ['low', 'medium', 'high'];
 
-const MEDIA_BUTTONS: {source: MediaSource; label: string}[] = [
-  {source: 'camera_photo', label: '📷 Photo'},
-  {source: 'camera_video', label: '🎥 Video'},
-  {source: 'library', label: '🖼️ Library'},
+const WEATHER: {label: string; icon: LucideIcon}[] = [
+  {label: 'Clear', icon: Sun},
+  {label: 'Cloudy', icon: Cloud},
+  {label: 'Rain', icon: CloudRain},
+  {label: 'Windy', icon: Wind},
+  {label: 'Hot', icon: Thermometer},
+  {label: 'Cold', icon: Snowflake},
 ];
 
-const WEATHER_OPTIONS = ['☀️ Clear', '⛅ Cloudy', '🌧️ Rain', '💨 Windy', '🌡️ Extreme Heat', '❄️ Cold'];
+const MEDIA_BUTTONS: {source: MediaSource; label: string; icon: LucideIcon}[] = [
+  {source: 'camera_photo', label: 'Photo', icon: Camera},
+  {source: 'camera_video', label: 'Video', icon: Video},
+  {source: 'library', label: 'Library', icon: Images},
+];
+
+const NOTES_PLACEHOLDER: Record<CaptureType, string> = {
+  daily_log: 'Work completed, deliveries, visitors, delays…',
+  rfi: 'What information do you need, and from whom?',
+  punchlist: 'Describe the deficiency and the correction required.',
+  issue: 'What happened, and what is affected?',
+  inspection: 'Findings and pass / fail result.',
+};
 
 export const CaptureForm: React.FC<Props> = ({onSave, onCancel}) => {
+  const styles = useStyles();
+  const {colors} = useTheme();
   const [captureType, setCaptureType] = useState<CaptureType>('daily_log');
   const [projectName, setProjectName] = useState('');
   const [location, setLocation] = useState('');
@@ -60,6 +82,7 @@ export const CaptureForm: React.FC<Props> = ({onSave, onCancel}) => {
   const [weather, setWeather] = useState('');
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const [importing, setImporting] = useState(false);
+  const [showErrors, setShowErrors] = useState(false);
 
   // Media is copied into app storage as soon as it's picked. If the form is
   // closed without saving (Cancel or swipe-down), delete those copies.
@@ -78,7 +101,7 @@ export const CaptureForm: React.FC<Props> = ({onSave, onCancel}) => {
   const addMedia = async (source: MediaSource) => {
     const remaining = MAX_ATTACHMENTS - attachments.length;
     if (remaining <= 0) {
-      Alert.alert('Limit reached', `Up to ${MAX_ATTACHMENTS} photos or videos per capture.`);
+      Alert.alert('Limit reached', `You can attach up to ${MAX_ATTACHMENTS} photos or videos.`);
       return;
     }
     setImporting(true);
@@ -86,10 +109,7 @@ export const CaptureForm: React.FC<Props> = ({onSave, onCancel}) => {
       const added = await MediaService.pick(source, remaining);
       setAttachments(prev => [...prev, ...added]);
     } catch (err) {
-      Alert.alert(
-        "Couldn't add media",
-        err instanceof Error ? err.message : 'Something went wrong.',
-      );
+      Alert.alert("Couldn't add media", err instanceof Error ? err.message : 'Something went wrong.');
     } finally {
       setImporting(false);
     }
@@ -100,16 +120,14 @@ export const CaptureForm: React.FC<Props> = ({onSave, onCancel}) => {
     MediaService.remove([attachment]);
   };
 
-  const handleSave = () => {
-    if (!projectName.trim()) {
-      Alert.alert('Required', 'Project name is required.');
-      return;
-    }
-    if (!location.trim()) {
-      Alert.alert('Required', 'Location / section is required.');
-      return;
-    }
+  const projectError = showErrors && !projectName.trim() ? 'Enter the project name.' : undefined;
+  const locationError = showErrors && !location.trim() ? 'Enter where on site this is.' : undefined;
 
+  const handleSave = () => {
+    if (!projectName.trim() || !location.trim()) {
+      setShowErrors(true);
+      return;
+    }
     const capture: FieldCapture = {
       id: generateId(),
       captureType,
@@ -124,333 +142,294 @@ export const CaptureForm: React.FC<Props> = ({onSave, onCancel}) => {
       syncStatus: 'pending',
       retryCount: 0,
     };
-
     savedRef.current = true;
     onSave(capture);
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={styles.container}>
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        keyboardShouldPersistTaps="handled">
-        {/* Sheet handle */}
-        <View style={styles.handle} />
+    <SafeAreaView
+      style={styles.safe}
+      edges={Platform.OS === 'ios' ? ['bottom', 'left', 'right'] : ['top', 'bottom', 'left', 'right']}>
+      <View style={styles.navBar}>
+        <IconButton icon={X} onPress={onCancel} accessibilityLabel="Cancel" />
+        <Text style={styles.navTitle}>New capture</Text>
+        <View style={styles.navSpacer} />
+      </View>
 
-        <Text style={styles.title}>New Field Capture</Text>
-
-        {/* ── Capture Type ── */}
-        <View style={styles.field}>
-          <Text style={styles.label}>Type *</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <View style={styles.chipRow}>
-              {CAPTURE_TYPES.map(t => (
-                <TouchableOpacity
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <ScrollView
+          style={styles.flex}
+          contentContainerStyle={styles.scroll}
+          keyboardShouldPersistTaps="handled">
+          {/* Type */}
+          <FieldLabel text="Type" first />
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.chipRow}
+            style={styles.bleed}>
+            {CAPTURE_TYPES.map(t => {
+              const Icon = CAPTURE_TYPE_ICONS[t];
+              const selected = captureType === t;
+              return (
+                <Pressable
                   key={t}
-                  style={[
-                    styles.chip,
-                    captureType === t && styles.chipActive,
-                  ]}
                   onPress={() => setCaptureType(t)}
-                  accessibilityLabel={CAPTURE_TYPE_LABELS[t]}>
-                  <Text
-                    style={[
-                      styles.chipText,
-                      captureType === t && styles.chipTextActive,
-                    ]}>
+                  accessibilityRole="radio"
+                  accessibilityState={{selected}}
+                  style={[styles.chip, selected && styles.chipSelected]}>
+                  <Icon
+                    size={16}
+                    color={selected ? colors.onPrimary : colors.textSecondary}
+                    strokeWidth={ICON_STROKE}
+                  />
+                  <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
                     {CAPTURE_TYPE_LABELS[t]}
                   </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </ScrollView>
-        </View>
-
-        {/* ── Priority ── */}
-        <View style={styles.field}>
-          <Text style={styles.label}>Priority *</Text>
-          <View style={styles.chipRow}>
-            {PRIORITIES.map(p => {
-              const cfg = PRIORITY_LABELS[p];
-              const isActive = priority === p;
-              return (
-                <TouchableOpacity
-                  key={p}
-                  style={[
-                    styles.chip,
-                    isActive && {backgroundColor: cfg.color + '30', borderColor: cfg.color},
-                  ]}
-                  onPress={() => setPriority(p)}
-                  accessibilityLabel={cfg.label}>
-                  <Text
-                    style={[
-                      styles.chipText,
-                      isActive && {color: cfg.color},
-                      isActive && styles.chipTextPriorityActive,
-                    ]}>
-                    {cfg.label}
-                  </Text>
-                </TouchableOpacity>
+                </Pressable>
               );
             })}
-          </View>
-        </View>
+          </ScrollView>
 
-        {/* ── Project Name ── */}
-        <View style={styles.field}>
-          <Text style={styles.label}>Project Name *</Text>
-          <TextInput
-            style={styles.input}
+          <Field
+            label="Project"
             value={projectName}
             onChangeText={setProjectName}
-            placeholder="e.g. Main Street Office Build"
-            placeholderTextColor="#4B5563"
-            autoCorrect={false}
+            placeholder="e.g. Main Street Office"
+            error={projectError}
             returnKeyType="next"
           />
-        </View>
-
-        {/* ── Location / Section ── */}
-        <View style={styles.field}>
-          <Text style={styles.label}>Location / Section *</Text>
-          <TextInput
-            style={styles.input}
+          <Field
+            label="Location"
             value={location}
             onChangeText={setLocation}
-            placeholder="e.g. Level 3 – Grid B4, Roof Section C"
-            placeholderTextColor="#4B5563"
-            autoCorrect={false}
+            placeholder="e.g. Level 3, Grid B4"
+            error={locationError}
             returnKeyType="next"
           />
-        </View>
 
-        {/* ── Daily Log extras ── */}
-        {captureType === 'daily_log' && (
-          <>
-            <View style={styles.row}>
-              <View style={[styles.field, styles.workerCountField]}>
-                <Text style={styles.label}>Workers on Site</Text>
-                <TextInput
-                  style={styles.input}
-                  value={workerCount}
-                  onChangeText={setWorkerCount}
-                  placeholder="e.g. 12"
-                  placeholderTextColor="#4B5563"
-                  keyboardType="number-pad"
-                />
-              </View>
-              <View style={[styles.field, styles.weatherField]}>
-                <Text style={styles.label}>Weather</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                  <View style={styles.chipRow}>
-                    {WEATHER_OPTIONS.map(w => (
-                      <TouchableOpacity
-                        key={w}
-                        style={[
-                          styles.chip,
-                          weather === w && styles.chipActive,
-                          styles.weatherChip,
-                        ]}
-                        onPress={() => setWeather(weather === w ? '' : w)}>
-                        <Text style={[styles.chipText, styles.weatherChipText, weather === w && styles.chipTextActive]}>
-                          {w}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                </ScrollView>
-              </View>
-            </View>
-          </>
-        )}
+          <FieldLabel text="Priority" />
+          <SegmentedControl<Priority>
+            value={priority}
+            onChange={setPriority}
+            segments={PRIORITIES.map(p => ({
+              value: p,
+              label: PRIORITY_LABELS[p],
+              color: p === 'low' ? undefined : colors.priority[p],
+            }))}
+          />
 
-        {/* ── Notes ── */}
-        <View style={styles.field}>
-          <Text style={styles.label}>Notes</Text>
-          <TextInput
-            style={[styles.input, styles.multiline]}
+          {captureType === 'daily_log' ? (
+            <>
+              <Field
+                label="Workers on site"
+                value={workerCount}
+                onChangeText={t => setWorkerCount(t.replace(/[^0-9]/g, ''))}
+                placeholder="0"
+                keyboardType="number-pad"
+                containerStyle={styles.workersField}
+              />
+              <FieldLabel text="Weather" />
+              <View style={styles.wrapRow}>
+                {WEATHER.map(w => {
+                  const selected = weather === w.label;
+                  return (
+                    <Pressable
+                      key={w.label}
+                      onPress={() => setWeather(selected ? '' : w.label)}
+                      accessibilityRole="radio"
+                      accessibilityState={{selected}}
+                      style={[styles.chip, selected && styles.chipSelected]}>
+                      <w.icon
+                        size={16}
+                        color={selected ? colors.onPrimary : colors.textSecondary}
+                        strokeWidth={ICON_STROKE}
+                      />
+                      <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
+                        {w.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </>
+          ) : null}
+
+          <Field
+            label="Notes"
             value={notes}
             onChangeText={setNotes}
-            placeholder={
-              captureType === 'rfi'
-                ? 'Describe the information being requested…'
-                : captureType === 'punchlist'
-                ? 'Describe the deficiency and required correction…'
-                : captureType === 'inspection'
-                ? 'Inspection findings and pass/fail status…'
-                : 'Describe the issue or observation…'
-            }
-            placeholderTextColor="#4B5563"
+            placeholder={NOTES_PLACEHOLDER[captureType]}
             multiline
-            numberOfLines={4}
             textAlignVertical="top"
+            inputStyle={styles.notesInput}
           />
-        </View>
 
-        {/* ── Photos & Videos ── */}
-        <View style={styles.field}>
-          <Text style={styles.label}>
-            Photos & Videos{attachments.length ? ` (${attachments.length})` : ''}
-          </Text>
-          <View style={styles.mediaButtonRow}>
+          <FieldLabel
+            text={`Photos & videos${attachments.length ? ` · ${attachments.length}` : ''}`}
+          />
+          <View style={styles.mediaButtons}>
             {MEDIA_BUTTONS.map(b => (
-              <TouchableOpacity
+              <Button
                 key={b.source}
-                style={[styles.mediaBtn, importing && styles.mediaBtnDisabled]}
+                title={b.label}
+                icon={b.icon}
+                variant="secondary"
                 onPress={() => addMedia(b.source)}
                 disabled={importing}
-                accessibilityLabel={b.label}>
-                <Text style={styles.mediaBtnText}>{b.label}</Text>
-              </TouchableOpacity>
+                style={styles.flex}
+              />
             ))}
           </View>
           {attachments.length > 0 || importing ? (
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.thumbRow}>
+              contentContainerStyle={styles.thumbRow}
+              style={styles.bleed}>
               {attachments.map(a => (
-                <AttachmentThumb key={a.id} attachment={a} size={76} onRemove={removeMedia} />
+                <AttachmentThumb key={a.id} attachment={a} size={80} onRemove={removeMedia} />
               ))}
               {importing ? (
                 <View style={styles.importingTile}>
-                  <ActivityIndicator color="#94A3B8" />
+                  <ActivityIndicator color={colors.textSecondary} />
                 </View>
               ) : null}
             </ScrollView>
           ) : null}
-        </View>
 
-        {/* ── Offline indicator ── */}
-        <View style={styles.offlineBadge}>
-          <Text style={styles.offlineBadgeText}>
-            💾 Captured locally — will sync when online
+          <Text style={styles.footnote}>
+            Saved to this device first, then uploaded automatically when you're online.
           </Text>
-        </View>
+        </ScrollView>
 
-        <View style={styles.buttonRow}>
-          <TouchableOpacity
-            style={[styles.btn, styles.cancelBtn]}
-            onPress={onCancel}
-            accessibilityLabel="Cancel">
-            <Text style={styles.cancelBtnText}>Cancel</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.btn, styles.saveBtn]}
-            onPress={handleSave}
-            disabled={importing}
-            accessibilityLabel="Save capture">
-            <Text style={styles.saveBtnText}>Save Capture</Text>
-          </TouchableOpacity>
+        <View style={styles.footer}>
+          <Button title="Save capture" onPress={handleSave} disabled={importing} />
         </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 };
 
-const styles = StyleSheet.create({
-  container: {flex: 1, backgroundColor: '#0F172A'},
-  scroll: {padding: 20, paddingBottom: 48},
-  handle: {
-    width: 40,
-    height: 4,
-    backgroundColor: '#334155',
-    borderRadius: 2,
-    alignSelf: 'center',
-    marginBottom: 20,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: '#F1F5F9',
-    marginBottom: 20,
-  },
-  field: {marginBottom: 16},
-  row: {flexDirection: 'row', marginBottom: 16},
-  label: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#94A3B8',
-    marginBottom: 6,
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-  },
-  input: {
-    backgroundColor: '#1E293B',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#334155',
-    color: '#F1F5F9',
-    fontSize: 15,
-    paddingHorizontal: 14,
-    paddingVertical: 13,
-  },
-  multiline: {height: 96, paddingTop: 12},
-  chipRow: {flexDirection: 'row', flexWrap: 'wrap', gap: 6},
-  chip: {
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 20,
-    backgroundColor: '#1E293B',
-    borderWidth: 1,
-    borderColor: '#334155',
-  },
-  chipActive: {
-    backgroundColor: '#1D4ED830',
-    borderColor: '#3B82F6',
-  },
-  chipText: {fontSize: 12, color: '#94A3B8', fontWeight: '500'},
-  chipTextPriorityActive: {fontWeight: '700'},
-  chipTextActive: {color: '#60A5FA', fontWeight: '700'},
-  workerCountField: {flex: 1, marginRight: 8},
-  weatherField: {flex: 1},
-  weatherChip: {paddingHorizontal: 8},
-  weatherChipText: {fontSize: 11},
-  mediaButtonRow: {flexDirection: 'row', gap: 8},
-  mediaBtn: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 12,
-    backgroundColor: '#1E293B',
-    borderWidth: 1,
-    borderColor: '#334155',
+// ── Form field ─────────────────────────────────────────────────────────
+
+const FieldLabel: React.FC<{text: string; first?: boolean}> = ({text, first}) => {
+  const styles = useStyles();
+  return <Text style={[styles.label, first && styles.labelFirst]}>{text}</Text>;
+};
+
+const Field: React.FC<
+  TextInputProps & {
+    label: string;
+    error?: string;
+    containerStyle?: object;
+    inputStyle?: object;
+  }
+> = ({label, error, containerStyle, inputStyle, ...input}) => {
+  const styles = useStyles();
+  const {colors} = useTheme();
+  const [focused, setFocused] = useState(false);
+  return (
+    <View style={containerStyle}>
+      <FieldLabel text={label} />
+      <TextInput
+        {...input}
+        onFocus={e => {
+          setFocused(true);
+          input.onFocus?.(e);
+        }}
+        onBlur={e => {
+          setFocused(false);
+          input.onBlur?.(e);
+        }}
+        placeholderTextColor={colors.textTertiary}
+        accessibilityLabel={label}
+        style={[
+          styles.input,
+          focused && styles.inputFocused,
+          error ? styles.inputError : null,
+          inputStyle,
+        ]}
+      />
+      {error ? <Text style={styles.errorText}>{error}</Text> : null}
+    </View>
+  );
+};
+
+const useStyles = makeStyles(c => ({
+  safe: {flex: 1, backgroundColor: c.background},
+  flex: {flex: 1},
+  navBar: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: c.border,
   },
-  mediaBtnDisabled: {opacity: 0.5},
-  mediaBtnText: {color: '#E2E8F0', fontWeight: '700', fontSize: 13},
-  thumbRow: {gap: 8, paddingTop: 10},
+  navTitle: {...type.headline, color: c.text},
+  navSpacer: {width: 40},
+  scroll: {padding: spacing.lg, paddingBottom: spacing.xl},
+  bleed: {marginHorizontal: -spacing.lg, flexGrow: 0},
+  label: {
+    ...type.label,
+    color: c.textSecondary,
+    marginTop: spacing.xl,
+    marginBottom: spacing.sm,
+  },
+  labelFirst: {marginTop: 0},
+  chipRow: {gap: spacing.sm, paddingHorizontal: spacing.lg},
+  wrapRow: {flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm},
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    minHeight: 40,
+    paddingHorizontal: 14,
+    borderRadius: radius.pill,
+    backgroundColor: c.surface,
+    borderWidth: 1,
+    borderColor: c.border,
+  },
+  chipSelected: {backgroundColor: c.primary, borderColor: c.primary},
+  chipText: {...type.label, fontWeight: '500', color: c.textBody},
+  chipTextSelected: {color: c.onPrimary, fontWeight: '600'},
+  input: {
+    ...type.body,
+    minHeight: TOUCH_TARGET,
+    backgroundColor: c.surface,
+    borderRadius: radius.sm + 2,
+    borderWidth: 1,
+    borderColor: c.border,
+    color: c.text,
+    paddingHorizontal: spacing.md + 2,
+    paddingVertical: spacing.md,
+  },
+  inputFocused: {borderColor: c.primary},
+  inputError: {borderColor: c.danger},
+  errorText: {...type.footnote, color: c.danger, marginTop: 6},
+  notesInput: {minHeight: 112},
+  workersField: {width: 160},
+  mediaButtons: {flexDirection: 'row', gap: spacing.sm},
+  thumbRow: {gap: spacing.sm, paddingHorizontal: spacing.lg, paddingTop: spacing.md},
   importingTile: {
-    width: 76,
-    height: 76,
-    borderRadius: 10,
-    backgroundColor: '#1E293B',
+    width: 80,
+    height: 80,
+    borderRadius: radius.sm,
+    backgroundColor: c.surfaceMuted,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  offlineBadge: {
-    backgroundColor: '#1E293B',
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#334155',
-    flexDirection: 'row',
-    alignItems: 'center',
+  footnote: {...type.footnote, color: c.textTertiary, marginTop: spacing.xl},
+  footer: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: c.border,
+    backgroundColor: c.background,
   },
-  offlineBadgeText: {fontSize: 12, color: '#64748B'},
-  buttonRow: {flexDirection: 'row', gap: 12},
-  btn: {flex: 1, paddingVertical: 15, borderRadius: 14, alignItems: 'center'},
-  cancelBtn: {backgroundColor: '#1E293B', borderWidth: 1, borderColor: '#334155'},
-  cancelBtnText: {color: '#94A3B8', fontWeight: '700', fontSize: 15},
-  saveBtn: {
-    backgroundColor: '#E3B02F',
-    shadowColor: '#E3B02F',
-    shadowOffset: {width: 0, height: 4},
-    shadowOpacity: 0.5,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  saveBtnText: {color: '#0F172A', fontWeight: '800', fontSize: 15},
-});
+}));

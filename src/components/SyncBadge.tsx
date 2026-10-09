@@ -1,95 +1,62 @@
-import React from 'react';
-import {View, Text, StyleSheet, Animated} from 'react-native';
+import React, {useEffect, useRef} from 'react';
+import {Animated, Easing, Text, View} from 'react-native';
+import {CircleAlert, Clock, CloudCheck, LucideIcon, RefreshCw} from 'lucide-react-native';
 import {SyncStatus} from '../types';
+import {makeStyles, type, useTheme} from '../theme';
+import {ICON_STROKE} from './ui';
 
 interface Props {
   status: SyncStatus;
-  errorMessage?: string;
   retryCount?: number;
 }
 
-const STATUS_CONFIG: Record<
-  SyncStatus,
-  {label: string; color: string; bg: string; icon: string}
-> = {
-  pending: {label: 'Pending', color: '#F59E0B', bg: '#FEF3C7', icon: '⏳'},
-  syncing: {label: 'Syncing…', color: '#3B82F6', bg: '#DBEAFE', icon: '🔄'},
-  synced:  {label: 'Synced',   color: '#10B981', bg: '#D1FAE5', icon: '✓'},
-  error:   {label: 'Error',    color: '#EF4444', bg: '#FEE2E2', icon: '✕'},
+const CONFIG: Record<SyncStatus, {label: string; icon: LucideIcon}> = {
+  pending: {label: 'Pending', icon: Clock},
+  syncing: {label: 'Syncing', icon: RefreshCw},
+  synced: {label: 'Synced', icon: CloudCheck},
+  error: {label: 'Sync failed', icon: CircleAlert},
 };
 
-export const SyncBadge: React.FC<Props> = ({status, errorMessage, retryCount = 0}) => {
-  const cfg = STATUS_CONFIG[status];
-  const spinValue = React.useRef(new Animated.Value(0)).current;
+/** Icon + label in the status colour. A pending item that has already failed reads "Retrying". */
+export const SyncBadge: React.FC<Props> = ({status, retryCount = 0}) => {
+  const styles = useStyles();
+  const {colors} = useTheme();
+  const {icon: Icon, label} = CONFIG[status];
+  const color = colors.status[status];
+  const spin = useRef(new Animated.Value(0)).current;
 
-  React.useEffect(() => {
-    if (status === 'syncing') {
-      Animated.loop(
-        Animated.timing(spinValue, {
-          toValue: 1,
-          duration: 900,
-          useNativeDriver: true,
-        }),
-      ).start();
-    } else {
-      spinValue.stopAnimation();
-      spinValue.setValue(0);
+  useEffect(() => {
+    if (status !== 'syncing') {
+      spin.stopAnimation();
+      spin.setValue(0);
+      return;
     }
-  }, [status, spinValue]);
+    const loop = Animated.loop(
+      Animated.timing(spin, {
+        toValue: 1,
+        duration: 1000,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      }),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [status, spin]);
 
-  const spin = spinValue.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '360deg'],
-  });
+  const rotate = spin.interpolate({inputRange: [0, 1], outputRange: ['0deg', '360deg']});
+  const text = status === 'pending' && retryCount > 0 ? 'Retrying' : label;
 
   return (
-    <View style={styles.wrapper}>
-      <View style={[styles.badge, {backgroundColor: cfg.bg}]}>
-        {status === 'syncing' ? (
-          <Animated.Text
-            style={[styles.icon, {transform: [{rotate: spin}]}]}>
-            {cfg.icon}
-          </Animated.Text>
-        ) : (
-          <Text style={styles.icon}>{cfg.icon}</Text>
-        )}
-        <Text style={[styles.label, {color: cfg.color}]}>{cfg.label}</Text>
-      </View>
-      {status === 'error' && errorMessage ? (
-        <Text style={styles.errorText} numberOfLines={1}>
-          {errorMessage}
-        </Text>
-      ) : null}
-      {status === 'pending' && retryCount > 0 ? (
-        <Text style={styles.retryText} numberOfLines={1}>
-          {retryCount} failed · retrying
-        </Text>
-      ) : null}
+    <View style={styles.row} accessibilityLabel={`Sync status: ${text}`}>
+      <Animated.View style={{transform: [{rotate}]}}>
+        <Icon size={14} color={color} strokeWidth={ICON_STROKE + 0.25} />
+      </Animated.View>
+      <Text style={[styles.label, {color}]}>{text}</Text>
     </View>
   );
 };
 
-const styles = StyleSheet.create({
-  wrapper: {alignItems: 'flex-end'},
-  badge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 20,
-    gap: 4,
-  },
-  icon: {fontSize: 11},
-  label: {fontSize: 11, fontWeight: '600'},
-  errorText: {
-    marginTop: 2,
-    fontSize: 10,
-    color: '#EF4444',
-    maxWidth: 160,
-  },
-  retryText: {
-    marginTop: 2,
-    fontSize: 10,
-    color: '#F59E0B',
-  },
-});
+const useStyles = makeStyles(() => ({
+  row: {flexDirection: 'row', alignItems: 'center', gap: 5},
+  label: {...type.label, fontSize: 12},
+}));

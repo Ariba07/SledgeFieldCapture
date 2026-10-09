@@ -1,15 +1,12 @@
 import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Animated,
-} from 'react-native';
+import {Pressable, Text, View} from 'react-native';
+import {RotateCw} from 'lucide-react-native';
 import {FieldCapture, CAPTURE_TYPE_LABELS, PRIORITY_LABELS} from '../types';
 import {SyncBadge} from './SyncBadge';
 import {AttachmentThumb} from './AttachmentThumb';
+import {Button, CaptureTypeIcon} from './ui';
 import {formatTimestamp} from '../utils/helpers';
+import {makeStyles, radius, spacing, type, useTheme} from '../theme';
 
 interface Props {
   capture: FieldCapture;
@@ -17,218 +14,143 @@ interface Props {
   progress?: number;
   onPress: () => void;
   onRetry: (id: string) => void;
-  onDelete: (id: string) => void;
 }
 
-export const CaptureCard: React.FC<Props> = ({
-  capture,
-  progress,
-  onPress,
-  onRetry,
-  onDelete,
-}) => {
-  const scaleAnim = React.useRef(new Animated.Value(0.95)).current;
+const MAX_THUMBS = 4;
 
-  React.useEffect(() => {
-    Animated.spring(scaleAnim, {
-      toValue: 1,
-      useNativeDriver: true,
-      tension: 60,
-      friction: 7,
-    }).start();
-  }, [scaleAnim]);
-
-  const priorityCfg = PRIORITY_LABELS[capture.priority];
+export const CaptureCard: React.FC<Props> = ({capture, progress, onPress, onRetry}) => {
+  const styles = useStyles();
+  const {colors} = useTheme();
   const attachments = capture.attachments ?? [];
   const extraCount = attachments.length - MAX_THUMBS;
+  const percent = progress != null ? Math.round(progress * 100) : null;
+  const showProgress = capture.syncStatus === 'syncing' && percent != null;
 
   return (
-    <Animated.View style={[styles.card, {transform: [{scale: scaleAnim}]}]}>
-      <TouchableOpacity
-        activeOpacity={0.7}
-        onPress={onPress}
-        accessibilityRole="button"
-        accessibilityLabel={`Open ${capture.projectName}`}>
-      {/* Header row */}
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={`${CAPTURE_TYPE_LABELS[capture.captureType]}, ${capture.projectName}`}
+      style={({pressed}) => [styles.card, pressed && styles.pressed]}>
       <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          {/* Capture type pill */}
-          <View style={styles.typePill}>
-            <Text style={styles.typeText}>
-              {CAPTURE_TYPE_LABELS[capture.captureType]}
-            </Text>
-          </View>
-          <Text style={styles.projectName} numberOfLines={1}>
+        <CaptureTypeIcon captureType={capture.captureType} />
+        <View style={styles.headerText}>
+          <Text style={styles.title} numberOfLines={1}>
             {capture.projectName}
           </Text>
+          <Text style={styles.subtitle} numberOfLines={1}>
+            {CAPTURE_TYPE_LABELS[capture.captureType]} · {capture.location}
+          </Text>
         </View>
-        <SyncBadge
-          status={capture.syncStatus}
-          errorMessage={capture.errorMessage}
-          retryCount={capture.retryCount}
-        />
+        <SyncBadge status={capture.syncStatus} retryCount={capture.retryCount} />
       </View>
 
-      {/* Meta row: location + priority + timestamp */}
-      <View style={styles.metaRow}>
-        <Text style={styles.metaText} numberOfLines={1}>
-          📍 {capture.location}
-        </Text>
-        <View style={[styles.priorityDot, {backgroundColor: priorityCfg.color}]} />
-        <Text style={[styles.priorityLabel, {color: priorityCfg.color}]}>
-          {priorityCfg.label}
-        </Text>
-      </View>
-
-      {/* Daily log extras */}
-      {capture.captureType === 'daily_log' &&
-        (capture.workerCount || capture.weather) ? (
-        <View style={styles.logExtras}>
-          {capture.workerCount ? (
-            <Text style={styles.extrasText}>👷 {capture.workerCount} workers</Text>
-          ) : null}
-          {capture.weather ? (
-            <Text style={styles.extrasText}>{capture.weather}</Text>
-          ) : null}
-        </View>
-      ) : null}
-
-      {/* Notes */}
       {capture.notes ? (
         <Text style={styles.notes} numberOfLines={2}>
           {capture.notes}
         </Text>
       ) : null}
 
-      {/* Photos & videos */}
       {attachments.length > 0 ? (
         <View style={styles.thumbRow}>
           {attachments.slice(0, MAX_THUMBS).map(a => (
-            <AttachmentThumb key={a.id} attachment={a} size={48} />
+            <AttachmentThumb key={a.id} attachment={a} size={56} />
           ))}
-          {extraCount > 0 ? <Text style={styles.moreText}>+{extraCount}</Text> : null}
+          {extraCount > 0 ? (
+            <View style={styles.moreTile}>
+              <Text style={styles.moreText}>+{extraCount}</Text>
+            </View>
+          ) : null}
         </View>
       ) : null}
 
-      {/* Upload progress */}
-      {capture.syncStatus === 'syncing' && progress != null ? (
-        <View style={styles.progressWrap} accessibilityLabel={`Uploading ${Math.round(progress * 100)}%`}>
+      {showProgress ? (
+        <View style={styles.progressRow}>
           <View style={styles.progressTrack}>
-            <View style={[styles.progressFill, {width: `${Math.round(progress * 100)}%`}]} />
+            <View style={[styles.progressFill, {width: `${percent}%`}]} />
           </View>
-          <Text style={styles.progressText}>Uploading media · {Math.round(progress * 100)}%</Text>
+          <Text style={styles.progressText}>{percent}%</Text>
         </View>
       ) : null}
 
-      </TouchableOpacity>
+      <Text style={styles.meta} numberOfLines={1}>
+        {formatTimestamp(capture.capturedAt)}
+        {capture.priority !== 'low' ? (
+          <Text style={{color: colors.priority[capture.priority]}}>
+            {'  ·  '}
+            {PRIORITY_LABELS[capture.priority]} priority
+          </Text>
+        ) : null}
+      </Text>
 
-      {/* Footer: timestamp + actions */}
-      <View style={styles.footer}>
-        <Text style={styles.timestamp}>
-          {formatTimestamp(capture.capturedAt)}
-          {capture.syncedAt ? ` · synced ${formatTimestamp(capture.syncedAt)}` : ''}
-        </Text>
-        <View style={styles.actions}>
-          {capture.syncStatus === 'error' && (
-            <TouchableOpacity
-              style={[styles.btn, styles.retryBtn]}
-              onPress={() => onRetry(capture.id)}
-              accessibilityLabel="Retry sync">
-              <Text style={styles.retryBtnText}>↺ Retry</Text>
-            </TouchableOpacity>
-          )}
-          <TouchableOpacity
-            style={[styles.btn, styles.deleteBtn]}
-            onPress={() => onDelete(capture.id)}
-            accessibilityLabel="Delete capture">
-            <Text style={styles.deleteBtnText}>Delete</Text>
-          </TouchableOpacity>
+      {capture.syncStatus === 'error' ? (
+        <View style={styles.errorRow}>
+          <Text style={styles.errorText} numberOfLines={2}>
+            {capture.errorMessage ?? 'Upload failed.'}
+          </Text>
+          <Button
+            title="Retry"
+            icon={RotateCw}
+            size="sm"
+            variant="secondary"
+            onPress={() => onRetry(capture.id)}
+            accessibilityLabel="Retry sync"
+          />
         </View>
-      </View>
-    </Animated.View>
+      ) : null}
+    </Pressable>
   );
 };
 
-const MAX_THUMBS = 4;
-
-const styles = StyleSheet.create({
+const useStyles = makeStyles(c => ({
   card: {
-    backgroundColor: '#1E293B',
-    borderRadius: 16,
-    padding: 14,
-    marginBottom: 10,
+    backgroundColor: c.surface,
+    borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: '#334155',
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 4},
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
+    borderColor: c.border,
+    padding: spacing.lg,
+    gap: spacing.md,
   },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 6,
+  pressed: {backgroundColor: c.surfaceMuted},
+  header: {flexDirection: 'row', alignItems: 'center', gap: spacing.md},
+  headerText: {flex: 1},
+  title: {...type.headline, color: c.text},
+  subtitle: {...type.footnote, color: c.textSecondary, marginTop: 1},
+  notes: {...type.subhead, color: c.textBody},
+  thumbRow: {flexDirection: 'row', gap: 6},
+  moreTile: {
+    width: 56,
+    height: 56,
+    borderRadius: radius.sm,
+    backgroundColor: c.surfaceMuted,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  headerLeft: {flex: 1, marginRight: 8},
-  typePill: {
-    backgroundColor: '#0F172A',
-    borderRadius: 10,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    alignSelf: 'flex-start',
-    marginBottom: 4,
-    borderWidth: 1,
-    borderColor: '#334155',
+  moreText: {...type.label, color: c.textSecondary},
+  progressRow: {flexDirection: 'row', alignItems: 'center', gap: spacing.sm},
+  progressTrack: {
+    flex: 1,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: c.surfaceMuted,
+    overflow: 'hidden',
   },
-  typeText: {fontSize: 11, color: '#94A3B8', fontWeight: '600'},
-  projectName: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#F1F5F9',
+  progressFill: {height: 4, borderRadius: 2, backgroundColor: c.status.syncing},
+  progressText: {
+    ...type.caption,
+    color: c.textSecondary,
+    fontVariant: ['tabular-nums'],
+    minWidth: 32,
+    textAlign: 'right',
   },
-  metaRow: {
+  meta: {...type.caption, color: c.textTertiary},
+  errorRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    marginBottom: 8,
+    gap: spacing.md,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: c.border,
   },
-  metaText: {fontSize: 12, color: '#64748B', flex: 1},
-  priorityDot: {width: 6, height: 6, borderRadius: 3},
-  priorityLabel: {fontSize: 11, fontWeight: '700'},
-  logExtras: {
-    flexDirection: 'row',
-    gap: 10,
-    backgroundColor: '#0F172A',
-    borderRadius: 8,
-    padding: 8,
-    marginBottom: 8,
-  },
-  extrasText: {fontSize: 12, color: '#94A3B8'},
-  notes: {
-    fontSize: 13,
-    color: '#CBD5E1',
-    lineHeight: 19,
-    marginBottom: 10,
-  },
-  thumbRow: {flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10},
-  moreText: {fontSize: 12, fontWeight: '700', color: '#94A3B8', marginLeft: 2},
-  progressWrap: {marginBottom: 10},
-  progressTrack: {height: 4, borderRadius: 2, backgroundColor: '#0F172A', overflow: 'hidden'},
-  progressFill: {height: 4, borderRadius: 2, backgroundColor: '#3B82F6'},
-  progressText: {fontSize: 11, color: '#60A5FA', marginTop: 4, fontWeight: '600'},
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  timestamp: {fontSize: 11, color: '#475569', flex: 1},
-  actions: {flexDirection: 'row', gap: 6},
-  btn: {paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8},
-  retryBtn: {backgroundColor: '#1D4ED8'},
-  retryBtnText: {color: '#BFDBFE', fontWeight: '600', fontSize: 12},
-  deleteBtn: {backgroundColor: '#1E293B', borderWidth: 1, borderColor: '#334155'},
-  deleteBtnText: {color: '#6B7280', fontWeight: '600', fontSize: 12},
-});
+  errorText: {...type.footnote, color: c.status.error, flex: 1},
+}));

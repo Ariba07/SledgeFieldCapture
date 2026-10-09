@@ -1,25 +1,39 @@
 import React, {useLayoutEffect} from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Alert,
-  Image,
-} from 'react-native';
+import {Alert, Image, ScrollView, Text, View} from 'react-native';
 import Video from 'react-native-video';
+import {MapPin, RotateCw, Trash2} from 'lucide-react-native';
 import {useSyncContext} from '../context/SyncContext';
 import {RootStackScreenProps} from '../navigation/types';
 import {SyncBadge} from '../components/SyncBadge';
-import {Attachment, CAPTURE_TYPE_LABELS, PRIORITY_LABELS} from '../types';
+import {Button, CaptureTypeIcon, ICON_STROKE, SectionHeader} from '../components/ui';
+import {Attachment, CAPTURE_TYPE_LABELS, FieldCapture, PRIORITY_LABELS} from '../types';
 import {formatBytes, formatDuration, formatTimestamp} from '../utils/helpers';
 import {attachmentUri} from '../services/MediaService';
+import {makeStyles, radius, spacing, type, useTheme} from '../theme';
 
-export const CaptureDetailScreen: React.FC<
-  RootStackScreenProps<'CaptureDetail'>
-> = ({navigation, route}) => {
-  const {captures, retryCapture, deleteCapture} = useSyncContext();
+const statusDetail = (c: FieldCapture, isOnline: boolean): string => {
+  switch (c.syncStatus) {
+    case 'synced':
+      return c.syncedAt ? `Uploaded ${formatTimestamp(c.syncedAt).toLowerCase()}` : 'Uploaded';
+    case 'syncing':
+      return 'Uploading now…';
+    case 'error':
+      return c.errorMessage ?? 'Upload failed.';
+    case 'pending':
+      if (c.retryCount > 0) {
+        return `Attempt ${c.retryCount} failed — trying again shortly.`;
+      }
+      return isOnline ? 'Queued for upload.' : 'Saved on this device. Uploads when you reconnect.';
+  }
+};
+
+export const CaptureDetailScreen: React.FC<RootStackScreenProps<'CaptureDetail'>> = ({
+  navigation,
+  route,
+}) => {
+  const styles = useStyles();
+  const {colors} = useTheme();
+  const {captures, progress, isOnline, retryCapture, deleteCapture} = useSyncContext();
   const capture = captures.find(c => c.id === route.params.captureId);
 
   useLayoutEffect(() => {
@@ -36,10 +50,8 @@ export const CaptureDetailScreen: React.FC<
     );
   }
 
-  const priorityCfg = PRIORITY_LABELS[capture.priority];
-
   const handleDelete = () => {
-    Alert.alert('Delete capture?', 'This cannot be undone.', [
+    Alert.alert('Delete this capture?', 'It will be removed from this device. This can’t be undone.', [
       {text: 'Cancel', style: 'cancel'},
       {
         text: 'Delete',
@@ -52,77 +64,106 @@ export const CaptureDetailScreen: React.FC<
     ]);
   };
 
+  const percent = progress[capture.id] != null ? Math.round(progress[capture.id] * 100) : null;
+  const details: [string, string, string?][] = [
+    ['Priority', PRIORITY_LABELS[capture.priority], colors.priority[capture.priority]],
+    ...(capture.workerCount
+      ? ([['Workers on site', String(capture.workerCount)]] as [string, string][])
+      : []),
+    ...(capture.weather ? ([['Weather', capture.weather]] as [string, string][]) : []),
+    ['Captured', formatTimestamp(capture.capturedAt)],
+  ];
+
   return (
-    <ScrollView contentContainerStyle={styles.scroll}>
-      <View style={styles.headerRow}>
-        <Text style={styles.projectName}>{capture.projectName}</Text>
-        <SyncBadge
-          status={capture.syncStatus}
-          errorMessage={capture.errorMessage}
-          retryCount={capture.retryCount}
-        />
+    <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
+      {/* Title */}
+      <View style={styles.titleBlock}>
+        <CaptureTypeIcon captureType={capture.captureType} size={44} />
+        <View style={styles.titleText}>
+          <Text style={styles.title}>{capture.projectName}</Text>
+          <View style={styles.locationRow}>
+            <MapPin size={14} color={colors.textSecondary} strokeWidth={ICON_STROKE} />
+            <Text style={styles.location}>{capture.location}</Text>
+          </View>
+        </View>
       </View>
 
-      <Row label="Location" value={`📍 ${capture.location}`} />
-      <Row
-        label="Priority"
-        value={priorityCfg.label}
-        valueStyle={{color: priorityCfg.color}}
-      />
-      {capture.workerCount ? (
-        <Row label="Workers on Site" value={`👷 ${capture.workerCount}`} />
-      ) : null}
-      {capture.weather ? <Row label="Weather" value={capture.weather} /> : null}
-      <Row label="Captured" value={formatTimestamp(capture.capturedAt)} />
-      {capture.syncedAt ? (
-        <Row label="Synced" value={formatTimestamp(capture.syncedAt)} />
-      ) : null}
-      {capture.errorMessage && capture.syncStatus !== 'synced' ? (
-        <Row
-          label="Last Error"
-          value={capture.errorMessage}
-          valueStyle={styles.errorText}
-        />
-      ) : null}
-
-      <View style={styles.field}>
-        <Text style={styles.label}>Notes</Text>
-        <Text style={styles.notes}>{capture.notes || '—'}</Text>
+      {/* Sync status */}
+      <View style={styles.card}>
+        <SyncBadge status={capture.syncStatus} retryCount={capture.retryCount} />
+        <Text
+          style={[
+            styles.statusDetail,
+            capture.syncStatus === 'error' && {color: colors.status.error},
+          ]}>
+          {statusDetail(capture, isOnline)}
+        </Text>
+        {capture.syncStatus === 'syncing' && percent != null ? (
+          <View style={styles.progressTrack}>
+            <View style={[styles.progressFill, {width: `${percent}%`}]} />
+          </View>
+        ) : null}
+        {capture.syncStatus === 'error' ? (
+          <Button
+            title="Retry upload"
+            icon={RotateCw}
+            onPress={() => retryCapture(capture.id)}
+            style={styles.retryButton}
+          />
+        ) : null}
       </View>
 
-      {capture.attachments?.length ? (
-        <View style={styles.field}>
-          <Text style={styles.label}>
-            Photos & Videos ({capture.attachments.length})
-          </Text>
-          {capture.attachments.map(a => (
-            <MediaItem key={a.id} attachment={a} />
+      {/* Details */}
+      <View style={styles.section}>
+        <SectionHeader title="Details" />
+        <View style={styles.group}>
+          {details.map(([label, value, color], i) => (
+            <View key={label} style={[styles.row, i > 0 && styles.rowDivider]}>
+              <Text style={styles.rowLabel}>{label}</Text>
+              <Text style={[styles.rowValue, color ? {color} : null]}>{value}</Text>
+            </View>
           ))}
+        </View>
+      </View>
+
+      {/* Notes */}
+      {capture.notes ? (
+        <View style={styles.section}>
+          <SectionHeader title="Notes" />
+          <View style={styles.card}>
+            <Text style={styles.notes}>{capture.notes}</Text>
+          </View>
         </View>
       ) : null}
 
-      <View style={styles.buttonRow}>
-        {capture.syncStatus === 'error' && (
-          <TouchableOpacity
-            style={[styles.btn, styles.retryBtn]}
-            onPress={() => retryCapture(capture.id)}
-            accessibilityLabel="Retry sync">
-            <Text style={styles.retryBtnText}>↺ Retry Sync</Text>
-          </TouchableOpacity>
-        )}
-        <TouchableOpacity
-          style={[styles.btn, styles.deleteBtn]}
-          onPress={handleDelete}
-          accessibilityLabel="Delete capture">
-          <Text style={styles.deleteBtnText}>Delete</Text>
-        </TouchableOpacity>
-      </View>
+      {/* Media */}
+      {capture.attachments?.length ? (
+        <View style={styles.section}>
+          <SectionHeader title={`Photos & videos · ${capture.attachments.length}`} />
+          <View style={styles.mediaList}>
+            {capture.attachments.map(a => (
+              <MediaItem key={a.id} attachment={a} />
+            ))}
+          </View>
+        </View>
+      ) : null}
+
+      <Button
+        title="Delete capture"
+        icon={Trash2}
+        variant="destructive"
+        onPress={handleDelete}
+        style={styles.deleteButton}
+      />
     </ScrollView>
   );
 };
 
 const MediaItem: React.FC<{attachment: Attachment}> = ({attachment: a}) => {
-  const aspectRatio = a.width && a.height ? a.width / a.height : a.kind === 'video' ? 16 / 9 : 4 / 3;
+  const styles = useStyles();
+  const {colors} = useTheme();
+  const aspectRatio =
+    a.width && a.height ? a.width / a.height : a.kind === 'video' ? 16 / 9 : 4 / 3;
   const uri = attachmentUri(a);
   const meta = [
     a.kind === 'video' ? 'Video' : 'Photo',
@@ -133,7 +174,7 @@ const MediaItem: React.FC<{attachment: Attachment}> = ({attachment: a}) => {
     .join(' · ');
 
   return (
-    <View style={styles.mediaItem}>
+    <View>
       {a.kind === 'video' ? (
         <Video
           source={{uri}}
@@ -143,77 +184,77 @@ const MediaItem: React.FC<{attachment: Attachment}> = ({attachment: a}) => {
           resizeMode="contain"
         />
       ) : (
-        <Image source={{uri}} style={[styles.media, {aspectRatio}]} resizeMode="contain" />
+        <Image source={{uri}} style={[styles.media, {aspectRatio}]} resizeMode="cover" />
       )}
-      <View style={styles.mediaMetaRow}>
-        <Text style={styles.mediaMeta}>{meta}</Text>
-        <Text style={[styles.mediaMeta, a.remoteUrl ? styles.uploaded : styles.notUploaded]}>
-          {a.remoteUrl ? '☁️ Uploaded' : '⏳ Not uploaded yet'}
+      <View style={styles.mediaMeta}>
+        <Text style={styles.mediaMetaText}>{meta}</Text>
+        <Text
+          style={[
+            styles.mediaMetaText,
+            {color: a.remoteUrl ? colors.status.synced : colors.textTertiary},
+          ]}>
+          {a.remoteUrl ? 'Uploaded' : 'Not uploaded'}
         </Text>
       </View>
     </View>
   );
 };
 
-const Row: React.FC<{
-  label: string;
-  value: string;
-  valueStyle?: object;
-}> = ({label, value, valueStyle}) => (
-  <View style={styles.field}>
-    <Text style={styles.label}>{label}</Text>
-    <Text style={[styles.value, valueStyle]}>{value}</Text>
-  </View>
-);
-
-const styles = StyleSheet.create({
-  scroll: {padding: 20, paddingBottom: 48},
-  headerRow: {
+const useStyles = makeStyles(c => ({
+  screen: {flex: 1, backgroundColor: c.background},
+  content: {padding: spacing.lg, paddingBottom: spacing.xxl * 2, gap: spacing.xl},
+  titleBlock: {flexDirection: 'row', alignItems: 'center', gap: spacing.md},
+  titleText: {flex: 1},
+  title: {...type.title, fontSize: 22, lineHeight: 28, color: c.text},
+  locationRow: {flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2},
+  location: {...type.subhead, color: c.textSecondary},
+  card: {
+    backgroundColor: c.surface,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: c.border,
+    padding: spacing.lg,
+    gap: spacing.sm,
+  },
+  statusDetail: {...type.subhead, color: c.textBody},
+  progressTrack: {
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: c.surfaceMuted,
+    overflow: 'hidden',
+    marginTop: spacing.xs,
+  },
+  progressFill: {height: 4, borderRadius: 2, backgroundColor: c.status.syncing},
+  retryButton: {marginTop: spacing.sm},
+  section: {},
+  group: {
+    backgroundColor: c.surface,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: c.border,
+    paddingHorizontal: spacing.lg,
+  },
+  row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 20,
-    gap: 12,
+    alignItems: 'center',
+    minHeight: 48,
+    gap: spacing.lg,
   },
-  projectName: {fontSize: 22, fontWeight: '800', color: '#F1F5F9', flex: 1},
-  field: {marginBottom: 16},
-  label: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#94A3B8',
-    marginBottom: 4,
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-  },
-  value: {fontSize: 15, color: '#F1F5F9'},
-  errorText: {color: '#FCA5A5'},
-  notes: {
-    fontSize: 15,
-    color: '#CBD5E1',
-    lineHeight: 22,
-    backgroundColor: '#1E293B',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#334155',
-    padding: 14,
-  },
-  mediaItem: {marginBottom: 12},
+  rowDivider: {borderTopWidth: 1, borderTopColor: c.border},
+  rowLabel: {...type.callout, color: c.textSecondary},
+  rowValue: {...type.callout, fontWeight: '500', color: c.text, flexShrink: 1, textAlign: 'right'},
+  notes: {...type.body, color: c.textBody},
+  mediaList: {gap: spacing.lg},
   media: {
     width: '100%',
-    maxHeight: 420,
-    borderRadius: 12,
-    backgroundColor: '#020617',
+    maxHeight: 440,
+    borderRadius: radius.md,
+    backgroundColor: c.surfaceMuted,
   },
-  mediaMetaRow: {flexDirection: 'row', justifyContent: 'space-between', marginTop: 6},
-  mediaMeta: {fontSize: 12, color: '#94A3B8'},
-  uploaded: {color: '#34D399'},
-  notUploaded: {color: '#F59E0B'},
-  buttonRow: {flexDirection: 'row', gap: 12, marginTop: 8},
-  btn: {flex: 1, paddingVertical: 15, borderRadius: 14, alignItems: 'center'},
-  retryBtn: {backgroundColor: '#1D4ED8'},
-  retryBtnText: {color: '#BFDBFE', fontWeight: '700', fontSize: 15},
-  deleteBtn: {backgroundColor: '#450A0A', borderWidth: 1, borderColor: '#7F1D1D'},
-  deleteBtnText: {color: '#FCA5A5', fontWeight: '700', fontSize: 15},
-  missing: {flex: 1, alignItems: 'center', justifyContent: 'center'},
-  missingText: {color: '#64748B', fontSize: 15},
-});
+  mediaMeta: {flexDirection: 'row', justifyContent: 'space-between', marginTop: spacing.sm},
+  mediaMetaText: {...type.caption, color: c.textSecondary},
+  deleteButton: {marginTop: spacing.sm},
+  missing: {flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: c.background},
+  missingText: {...type.callout, color: c.textTertiary},
+}));

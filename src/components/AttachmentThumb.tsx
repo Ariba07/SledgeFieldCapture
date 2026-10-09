@@ -1,8 +1,10 @@
 import React from 'react';
-import {Image, StyleSheet, Text, TouchableOpacity, View} from 'react-native';
+import {Image, Pressable, StyleSheet, Text, View} from 'react-native';
+import {Check, Play, X} from 'lucide-react-native';
 import {Attachment} from '../types';
 import {attachmentUri} from '../services/MediaService';
 import {formatDuration} from '../utils/helpers';
+import {makeStyles, radius} from '../theme';
 
 interface Props {
   attachment: Attachment;
@@ -10,73 +12,75 @@ interface Props {
   onRemove?: (attachment: Attachment) => void;
 }
 
-/** Square preview: the photo itself, or a play tile with the video's length. */
-export const AttachmentThumb: React.FC<Props> = ({attachment, size, onRemove}) => (
-  <View style={[styles.thumb, {width: size, height: size}]}>
-    {attachment.kind === 'photo' ? (
-      <Image source={{uri: attachmentUri(attachment)}} style={StyleSheet.absoluteFill} />
-    ) : (
-      <View style={[StyleSheet.absoluteFill, styles.videoTile]}>
-        <Text style={[styles.play, {fontSize: size * 0.3}]}>▶</Text>
-      </View>
-    )}
+/** Square preview: the photo itself, or a dark tile with a play glyph and the video's length. */
+export const AttachmentThumb: React.FC<Props> = ({attachment, size, onRemove}) => {
+  const styles = useStyles();
+  const showMeta = size >= 56;
 
-    {attachment.kind === 'video' && attachment.durationSec != null && size >= 56 ? (
-      <Text style={styles.duration}>{formatDuration(attachment.durationSec)}</Text>
-    ) : null}
+  return (
+    <View style={[styles.thumb, {width: size, height: size}]}>
+      {attachment.kind === 'photo' ? (
+        <Image source={{uri: attachmentUri(attachment)}} style={StyleSheet.absoluteFill} />
+      ) : (
+        <View style={[StyleSheet.absoluteFill, styles.videoTile]}>
+          <Play size={size * 0.28} color="#FFFFFF" fill="#FFFFFF" />
+        </View>
+      )}
 
-    {attachment.remoteUrl ? (
-      <View style={styles.uploadedDot} accessibilityLabel="Uploaded" />
-    ) : null}
+      {attachment.kind === 'video' && attachment.durationSec != null && showMeta ? (
+        <Text style={styles.duration}>{formatDuration(attachment.durationSec)}</Text>
+      ) : null}
 
-    {onRemove ? (
-      <TouchableOpacity
-        style={styles.remove}
-        onPress={() => onRemove(attachment)}
-        hitSlop={8}
-        accessibilityLabel={`Remove ${attachment.kind}`}>
-        <Text style={styles.removeText}>✕</Text>
-      </TouchableOpacity>
-    ) : null}
-  </View>
-);
+      {attachment.remoteUrl && showMeta ? (
+        <View style={styles.uploaded} accessibilityLabel="Uploaded">
+          <Check size={10} color="#FFFFFF" strokeWidth={3} />
+        </View>
+      ) : null}
 
-const styles = StyleSheet.create({
+      {onRemove ? (
+        <Pressable
+          style={styles.remove}
+          onPress={() => onRemove(attachment)}
+          hitSlop={10}
+          accessibilityRole="button"
+          accessibilityLabel={`Remove ${attachment.kind}`}>
+          <X size={12} color="#FFFFFF" strokeWidth={3} />
+        </Pressable>
+      ) : null}
+    </View>
+  );
+};
+
+const useStyles = makeStyles(c => ({
   thumb: {
-    borderRadius: 10,
+    borderRadius: radius.sm,
     overflow: 'hidden',
-    backgroundColor: '#0F172A',
-    borderWidth: 1,
-    borderColor: '#334155',
+    backgroundColor: c.surfaceMuted,
   },
   videoTile: {
-    backgroundColor: '#020617',
+    backgroundColor: '#1C1C1E',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  play: {color: '#E2E8F0'},
   duration: {
     position: 'absolute',
     bottom: 4,
-    left: 4,
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#F1F5F9',
-    backgroundColor: '#00000099',
-    paddingHorizontal: 4,
-    borderRadius: 4,
-    overflow: 'hidden',
-  },
-  uploadedDot: {
-    position: 'absolute',
-    top: 5,
     left: 5,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#34D399',
-    borderWidth: 1,
-    borderColor: '#0F172A',
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    fontVariant: ['tabular-nums'],
+  },
+  uploaded: {
+    position: 'absolute',
+    bottom: 4,
+    right: 4,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: c.status.synced,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   remove: {
     position: 'absolute',
@@ -85,9 +89,8 @@ const styles = StyleSheet.create({
     width: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: '#000000B0',
+    backgroundColor: 'rgba(0,0,0,0.6)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  removeText: {color: '#F1F5F9', fontSize: 11, fontWeight: '800'},
-});
+}));

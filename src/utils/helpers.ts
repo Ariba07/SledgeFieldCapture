@@ -3,14 +3,26 @@ import {v4 as uuidv4} from 'uuid';
 
 export const generateId = (): string => uuidv4();
 
+const sameDay = (a: Date, b: Date) =>
+  a.getFullYear() === b.getFullYear() &&
+  a.getMonth() === b.getMonth() &&
+  a.getDate() === b.getDate();
+
+/** "Today, 14:32", "Yesterday, 09:10", "7 Oct, 16:05" — in the device's locale. */
 export const formatTimestamp = (iso: string): string => {
   const d = new Date(iso);
-  return d.toLocaleString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  const now = new Date();
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  const time = d.toLocaleTimeString(undefined, {hour: '2-digit', minute: '2-digit'});
+  if (sameDay(d, now)) {
+    return `Today, ${time}`;
+  }
+  if (sameDay(d, yesterday)) {
+    return `Yesterday, ${time}`;
+  }
+  const date = d.toLocaleDateString(undefined, {day: 'numeric', month: 'short'});
+  return `${date}, ${time}`;
 };
 
 export const formatBytes = (bytes: number): string => {
