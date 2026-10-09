@@ -161,6 +161,11 @@ npm run lint        # ESLint
 npm run format      # Prettier (CI runs format:check)
 ```
 
+### App icon & splash screen
+
+- **Icons** are generated from `assets/brand/icon.svg` and `mark.svg` for iOS (1024px, no alpha) and Android (legacy, adaptive and Android 13 themed icons): `python3 scripts/generate_icons.py` (needs `rsvg-convert` and Pillow).
+- **Splash** is a React Native screen ([`SplashScreen.tsx`](./src/components/SplashScreen.tsx)) that animates the logo in and fades out once saved captures have loaded. The native launch screen is only a plain dark background, so there's no white flash before it.
+
 ---
 
 ## 🧪 Demonstrating Offline Behaviour
