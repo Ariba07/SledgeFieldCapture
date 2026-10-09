@@ -1,8 +1,9 @@
 import React, {useState} from 'react';
-import {FlatList, StyleSheet, View} from 'react-native';
+import {FlatList, View} from 'react-native';
 import {FieldCapture} from '../types';
 import {CaptureCard} from './CaptureCard';
 import {MAX_LIST_WIDTH, computeLayout, useLayout} from '../theme/layout';
+import {captureGridStyles} from '../styles/components/CaptureGrid.styles';
 
 interface Props {
   data: FieldCapture[];
@@ -36,7 +37,7 @@ export const CaptureGrid: React.FC<Props> = ({
   const sidePadding = gutter + Math.max(0, (available - MAX_LIST_WIDTH) / 2);
 
   return (
-    <View style={styles.fill} onLayout={e => setWidth(Math.round(e.nativeEvent.layout.width))}>
+    <View style={captureGridStyles.fill} onLayout={e => setWidth(Math.round(e.nativeEvent.layout.width))}>
       <FlatList
         // numColumns can't change on a mounted FlatList; remount on rotation / resize.
         key={`grid-${columns}`}
@@ -55,12 +56,12 @@ export const CaptureGrid: React.FC<Props> = ({
               progress={progress[item.id]}
               onPress={() => onOpen(item.id)}
               onRetry={onRetry}
-              style={styles.fill}
+              style={captureGridStyles.fill}
             />
           </View>
         )}
         contentContainerStyle={[
-          styles.content,
+          captureGridStyles.content,
           {paddingHorizontal: sidePadding, paddingBottom: bottomPadding},
         ]}
         showsVerticalScrollIndicator={false}
@@ -68,8 +69,3 @@ export const CaptureGrid: React.FC<Props> = ({
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  fill: {flex: 1},
-  content: {flexGrow: 1},
-});

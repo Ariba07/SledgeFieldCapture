@@ -39,6 +39,7 @@ src/
 │   └── SyncService.ts             — Upload transport (mock; real fetch shown in comments)
 ├── hooks/useSync.ts               — Wires SyncEngine to React + NetInfo
 ├── theme/                         — Design tokens + responsive layout (size classes)
+├── styles/                        — Per-component / per-screen styles (components/, screens/)
 ├── context/SyncContext.tsx        — One shared engine for every screen
 ├── navigation/                    — Tabs (Captures, Sync) + stack (Detail, New)
 ├── screens/                       — Home, Sync queue, Capture detail, New capture

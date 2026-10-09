@@ -7,7 +7,8 @@ import {SyncBadge} from './SyncBadge';
 import {AttachmentThumb} from './AttachmentThumb';
 import {Button, CaptureTypeIcon} from './ui';
 import {formatTimestamp} from '../utils/helpers';
-import {makeStyles, radius, spacing, type, useTheme} from '../theme';
+import {useTheme} from '../theme';
+import {useCaptureCardStyles} from '../styles/components/CaptureCard.styles';
 
 interface Props {
   capture: FieldCapture;
@@ -19,7 +20,7 @@ interface Props {
 }
 
 export const CaptureCard: React.FC<Props> = ({capture, progress, onPress, onRetry, style}) => {
-  const styles = useStyles();
+  const styles = useCaptureCardStyles();
   const {colors} = useTheme();
   const navigation = useNavigation();
   const attachments = capture.attachments ?? [];
@@ -110,50 +111,3 @@ export const CaptureCard: React.FC<Props> = ({capture, progress, onPress, onRetr
     </Pressable>
   );
 };
-
-const useStyles = makeStyles(c => ({
-  card: {
-    backgroundColor: c.surface,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: c.border,
-    padding: spacing.lg,
-    gap: spacing.md,
-  },
-  pressed: {backgroundColor: c.surfaceMuted},
-  header: {flexDirection: 'row', alignItems: 'center', gap: spacing.md},
-  headerText: {flex: 1},
-  title: {...type.headline, color: c.text},
-  subtitle: {...type.footnote, color: c.textSecondary, marginTop: 1},
-  notes: {...type.subhead, color: c.textBody},
-  // Bleed to the card edges so thumbnails scroll under the padding.
-  thumbScroller: {marginHorizontal: -spacing.lg, flexGrow: 0},
-  thumbRow: {gap: spacing.sm, paddingHorizontal: spacing.lg},
-  thumbPressed: {opacity: 0.75},
-  progressRow: {flexDirection: 'row', alignItems: 'center', gap: spacing.sm},
-  progressTrack: {
-    flex: 1,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: c.surfaceMuted,
-    overflow: 'hidden',
-  },
-  progressFill: {height: 4, borderRadius: 2, backgroundColor: c.status.syncing},
-  progressText: {
-    ...type.caption,
-    color: c.textSecondary,
-    fontVariant: ['tabular-nums'],
-    minWidth: 32,
-    textAlign: 'right',
-  },
-  meta: {...type.caption, color: c.textTertiary},
-  errorRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    paddingTop: spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: c.border,
-  },
-  errorText: {...type.footnote, color: c.status.error, flex: 1},
-}));

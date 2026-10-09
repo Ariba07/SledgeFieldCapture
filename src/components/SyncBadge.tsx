@@ -2,8 +2,9 @@ import React, {useEffect, useRef} from 'react';
 import {Animated, Easing, Text, View} from 'react-native';
 import {CircleAlert, Clock, CloudCheck, LucideIcon, RefreshCw} from 'lucide-react-native';
 import {SyncStatus} from '../types';
-import {makeStyles, type, useTheme} from '../theme';
+import {useTheme} from '../theme';
 import {ICON_STROKE} from './ui';
+import {useSyncBadgeStyles} from '../styles/components/SyncBadge.styles';
 
 interface Props {
   status: SyncStatus;
@@ -18,7 +19,7 @@ const CONFIG: Record<SyncStatus, {label: string; icon: LucideIcon}> = {
 };
 
 export const SyncBadge: React.FC<Props> = ({status, retryCount = 0}) => {
-  const styles = useStyles();
+  const styles = useSyncBadgeStyles();
   const {colors} = useTheme();
   const {icon: Icon, label} = CONFIG[status];
   const color = colors.status[status];
@@ -54,8 +55,3 @@ export const SyncBadge: React.FC<Props> = ({status, retryCount = 0}) => {
     </View>
   );
 };
-
-const useStyles = makeStyles(() => ({
-  row: {flexDirection: 'row', alignItems: 'center', gap: 5},
-  label: {...type.label, fontSize: 12},
-}));

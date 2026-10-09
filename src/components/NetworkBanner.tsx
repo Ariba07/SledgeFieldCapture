@@ -1,8 +1,9 @@
 import React from 'react';
 import {Text, View} from 'react-native';
 import {CloudOff} from 'lucide-react-native';
-import {makeStyles, radius, spacing, type, useTheme} from '../theme';
+import {useTheme} from '../theme';
 import {ICON_STROKE} from './ui';
+import {useNetworkBannerStyles} from '../styles/components/NetworkBanner.styles';
 
 interface Props {
   isOnline: boolean;
@@ -10,7 +11,7 @@ interface Props {
 }
 
 export const NetworkBanner: React.FC<Props> = ({isOnline, pendingCount}) => {
-  const styles = useStyles();
+  const styles = useNetworkBannerStyles();
   const {colors} = useTheme();
   if (isOnline) {
     return null;
@@ -31,19 +32,3 @@ export const NetworkBanner: React.FC<Props> = ({isOnline, pendingCount}) => {
     </View>
   );
 };
-
-const useStyles = makeStyles(c => ({
-  banner: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: spacing.md,
-    padding: spacing.md,
-    borderRadius: radius.md,
-    backgroundColor: c.surface,
-    borderWidth: 1,
-    borderColor: c.border,
-  },
-  text: {flex: 1},
-  title: {...type.label, color: c.text},
-  detail: {...type.footnote, color: c.textBody, marginTop: 1},
-}));

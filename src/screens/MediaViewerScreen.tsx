@@ -20,13 +20,14 @@ import {RootStackScreenProps} from '../navigation/types';
 import {Attachment} from '../types';
 import {attachmentUri} from '../services/MediaService';
 import {formatDuration} from '../utils/helpers';
-import {makeStyles, spacing, type} from '../theme';
+import {spacing} from '../theme';
+import {useMediaViewerScreenStyles} from '../styles/screens/MediaViewerScreen.styles';
 
 export const MediaViewerScreen: React.FC<RootStackScreenProps<'MediaViewer'>> = ({
   navigation,
   route,
 }) => {
-  const styles = useStyles();
+  const styles = useMediaViewerScreenStyles();
   const insets = useSafeAreaInsets();
   const {width, height} = useWindowDimensions();
   const {captures} = useSyncContext();
@@ -110,7 +111,7 @@ const ZoomablePhoto: React.FC<{uri: string; width: number; height: number}> = ({
   width,
   height,
 }) => {
-  const styles = useStyles();
+  const styles = useMediaViewerScreenStyles();
   return (
     <ScrollView
       style={styles.fill}
@@ -125,31 +126,3 @@ const ZoomablePhoto: React.FC<{uri: string; width: number; height: number}> = ({
     </ScrollView>
   );
 };
-
-const useStyles = makeStyles(() => ({
-  screen: {flex: 1, backgroundColor: '#000000'},
-  fill: {flex: 1},
-  topBar: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg,
-  },
-  close: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.14)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  closePressed: {backgroundColor: 'rgba(255,255,255,0.28)'},
-  closeSpacer: {width: 40},
-  counter: {...type.label, color: '#FFFFFF', fontVariant: ['tabular-nums']},
-  titleBlock: {flex: 1, alignItems: 'center'},
-  caption: {...type.caption, color: 'rgba(255,255,255,0.7)', marginTop: 2},
-}));

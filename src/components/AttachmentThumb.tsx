@@ -4,7 +4,7 @@ import {Check, Play, X} from 'lucide-react-native';
 import {Attachment} from '../types';
 import {attachmentUri} from '../services/MediaService';
 import {formatDuration} from '../utils/helpers';
-import {makeStyles, radius} from '../theme';
+import {useAttachmentThumbStyles} from '../styles/components/AttachmentThumb.styles';
 
 interface Props {
   attachment: Attachment;
@@ -13,7 +13,7 @@ interface Props {
 }
 
 export const AttachmentThumb: React.FC<Props> = ({attachment, size, onRemove}) => {
-  const styles = useStyles();
+  const styles = useAttachmentThumbStyles();
   const showMeta = size >= 56;
 
   return (
@@ -49,47 +49,3 @@ export const AttachmentThumb: React.FC<Props> = ({attachment, size, onRemove}) =
     </View>
   );
 };
-
-const useStyles = makeStyles(c => ({
-  thumb: {
-    borderRadius: radius.sm,
-    overflow: 'hidden',
-    backgroundColor: c.surfaceMuted,
-  },
-  videoTile: {
-    backgroundColor: '#1C1C1E',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  duration: {
-    position: 'absolute',
-    bottom: 4,
-    left: 5,
-    fontSize: 11,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    fontVariant: ['tabular-nums'],
-  },
-  uploaded: {
-    position: 'absolute',
-    bottom: 4,
-    right: 4,
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: c.status.synced,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  remove: {
-    position: 'absolute',
-    top: 4,
-    right: 4,
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-}));

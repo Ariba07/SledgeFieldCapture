@@ -16,7 +16,8 @@ import {
   TriangleAlert,
 } from 'lucide-react-native';
 import {CaptureType} from '../types';
-import {TOUCH_TARGET, makeStyles, radius, spacing, type, useTheme} from '../theme';
+import {useTheme} from '../theme';
+import {useUiStyles} from '../styles/components/ui.styles';
 
 export const ICON_STROKE = 2;
 
@@ -53,7 +54,7 @@ export const Button: React.FC<ButtonProps> = ({
   style,
   accessibilityLabel,
 }) => {
-  const styles = useStyles();
+  const styles = useUiStyles();
   const {colors} = useTheme();
   const fg = {
     primary: colors.onPrimary,
@@ -96,7 +97,7 @@ export const IconButton: React.FC<{
   accessibilityLabel: string;
   color?: string;
 }> = ({icon: Icon, onPress, accessibilityLabel, color}) => {
-  const styles = useStyles();
+  const styles = useUiStyles();
   const {colors} = useTheme();
   return (
     <Pressable
@@ -114,7 +115,7 @@ export const CaptureTypeIcon: React.FC<{captureType: CaptureType; size?: number}
   captureType,
   size = 36,
 }) => {
-  const styles = useStyles();
+  const styles = useUiStyles();
   const {colors} = useTheme();
   const Icon = CAPTURE_TYPE_ICONS[captureType];
   return (
@@ -128,7 +129,7 @@ export const SectionHeader: React.FC<{title: string; right?: React.ReactNode}> =
   title,
   right,
 }) => {
-  const styles = useStyles();
+  const styles = useUiStyles();
   return (
     <View style={styles.sectionHeader}>
       <Text style={styles.sectionTitle}>{title}</Text>
@@ -152,7 +153,7 @@ export function SegmentedControl<T extends string>({
   value: T;
   onChange: (value: T) => void;
 }) {
-  const styles = useStyles();
+  const styles = useUiStyles();
   return (
     <View style={styles.segmented} accessibilityRole="tablist">
       {segments.map(s => {
@@ -179,73 +180,3 @@ export function SegmentedControl<T extends string>({
     </View>
   );
 }
-
-const useStyles = makeStyles(c => ({
-  button: {
-    minHeight: TOUCH_TARGET + 4,
-    paddingHorizontal: spacing.lg,
-    borderRadius: radius.md,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-  },
-  buttonSmall: {
-    minHeight: 36,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.sm,
-    gap: 6,
-  },
-  primary: {backgroundColor: c.primary},
-  secondary: {
-    backgroundColor: c.surface,
-    borderWidth: 1,
-    borderColor: c.borderStrong,
-  },
-  destructive: {backgroundColor: c.dangerMuted},
-  ghost: {backgroundColor: 'transparent'},
-  pressed: {opacity: 0.75},
-  disabled: {opacity: 0.4},
-  label: {...type.headline},
-  labelSmall: {...type.label},
-  iconButton: {
-    width: 40,
-    height: 40,
-    borderRadius: radius.pill,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  iconButtonPressed: {backgroundColor: c.surfaceMuted},
-  typeIcon: {
-    borderRadius: radius.sm,
-    backgroundColor: c.surfaceMuted,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: spacing.sm,
-  },
-  sectionTitle: {...type.label, color: c.textSecondary},
-  segmented: {
-    flexDirection: 'row',
-    backgroundColor: c.surface,
-    borderWidth: 1,
-    borderColor: c.border,
-    borderRadius: radius.sm + 2,
-    padding: 3,
-  },
-  segment: {
-    flex: 1,
-    minHeight: 38,
-    borderRadius: radius.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: spacing.sm,
-  },
-  segmentSelected: {backgroundColor: c.surfaceRaised},
-  segmentLabel: {...type.label, color: c.textSecondary},
-  segmentLabelSelected: {color: c.text},
-}));

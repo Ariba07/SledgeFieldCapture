@@ -13,18 +13,18 @@ import {Maximize2} from 'lucide-react-native';
 import {Attachment} from '../types';
 import {attachmentUri} from '../services/MediaService';
 import {formatBytes, formatDuration} from '../utils/helpers';
-import {makeStyles, radius, spacing, type, useTheme} from '../theme';
+import {useTheme} from '../theme';
+import {useMediaCarouselStyles, GAP} from '../styles/components/MediaCarousel.styles';
 
 interface Props {
   attachments: Attachment[];
   onOpen: (index: number) => void;
 }
 
-const GAP = spacing.md;
 const MAX_HEIGHT = 440;
 
 export const MediaCarousel: React.FC<Props> = ({attachments, onOpen}) => {
-  const styles = useStyles();
+  const styles = useMediaCarouselStyles();
   const [width, setWidth] = useState(0);
   const [active, setActive] = useState(0);
   const multiple = attachments.length > 1;
@@ -82,7 +82,7 @@ const MediaTile: React.FC<{
   height: number;
   onOpen: () => void;
 }> = ({attachment: a, width, height, onOpen}) => {
-  const styles = useStyles();
+  const styles = useMediaCarouselStyles();
   const {colors} = useTheme();
   const uri = attachmentUri(a);
   const meta = [
@@ -129,32 +129,3 @@ const MediaTile: React.FC<{
     </View>
   );
 };
-
-const useStyles = makeStyles(c => ({
-  track: {gap: GAP},
-  frame: {
-    width: '100%',
-    borderRadius: radius.md,
-    overflow: 'hidden',
-    backgroundColor: c.surfaceMuted,
-  },
-  fill: {flex: 1},
-  pressed: {opacity: 0.85},
-  expand: {
-    position: 'absolute',
-    top: spacing.sm,
-    right: spacing.sm,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  expandPressed: {backgroundColor: 'rgba(0,0,0,0.75)'},
-  meta: {flexDirection: 'row', justifyContent: 'space-between', gap: spacing.sm, marginTop: spacing.sm},
-  metaText: {...type.caption, color: c.textSecondary},
-  dots: {flexDirection: 'row', justifyContent: 'center', gap: 6, marginTop: spacing.md},
-  dot: {width: 6, height: 6, borderRadius: 3, backgroundColor: c.borderStrong},
-  dotActive: {backgroundColor: c.primary, width: 18},
-}));

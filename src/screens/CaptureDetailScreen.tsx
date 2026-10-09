@@ -8,8 +8,9 @@ import {MediaCarousel} from '../components/MediaCarousel';
 import {Button, CaptureTypeIcon, ICON_STROKE, SectionHeader} from '../components/ui';
 import {CAPTURE_TYPE_LABELS, FieldCapture, PRIORITY_LABELS} from '../types';
 import {formatTimestamp} from '../utils/helpers';
-import {makeStyles, radius, spacing, type, useTheme} from '../theme';
+import {useTheme} from '../theme';
 import {READING_WIDTH, useLayout} from '../theme/layout';
+import {useCaptureDetailScreenStyles} from '../styles/screens/CaptureDetailScreen.styles';
 
 const WIDE_WIDTH = 1180;
 
@@ -38,7 +39,7 @@ export const CaptureDetailScreen: React.FC<RootStackScreenProps<'CaptureDetail'>
   navigation,
   route,
 }) => {
-  const styles = useStyles();
+  const styles = useCaptureDetailScreenStyles();
   const {colors} = useTheme();
   const {captures, progress, isOnline, retryCapture, deleteCapture} = useSyncContext();
   const {sizeClass, gutter} = useLayout();
@@ -183,58 +184,3 @@ export const CaptureDetailScreen: React.FC<RootStackScreenProps<'CaptureDetail'>
     </ScrollView>
   );
 };
-
-const useStyles = makeStyles(c => ({
-  screen: {flex: 1, backgroundColor: c.background},
-  content: {width: '100%', alignSelf: 'center', paddingBottom: spacing.xxl * 2},
-  columns: {gap: spacing.xl},
-  columnsWide: {flexDirection: 'row', alignItems: 'flex-start', gap: spacing.xxl},
-  column: {gap: spacing.xl},
-  infoColumn: {flex: 2, minWidth: 0},
-  mediaColumn: {flex: 3, minWidth: 0},
-  titleBlock: {flexDirection: 'row', alignItems: 'center', gap: spacing.md},
-  titleText: {flex: 1},
-  title: {...type.title, fontSize: 22, lineHeight: 28, color: c.text},
-  locationRow: {flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2},
-  location: {...type.subhead, color: c.textSecondary},
-  card: {
-    backgroundColor: c.surface,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: c.border,
-    padding: spacing.lg,
-    gap: spacing.sm,
-  },
-  statusDetail: {...type.subhead, color: c.textBody},
-  progressTrack: {
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: c.surfaceMuted,
-    overflow: 'hidden',
-    marginTop: spacing.xs,
-  },
-  progressFill: {height: 4, borderRadius: 2, backgroundColor: c.status.syncing},
-  retryButton: {marginTop: spacing.sm},
-  section: {},
-  group: {
-    backgroundColor: c.surface,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: c.border,
-    paddingHorizontal: spacing.lg,
-  },
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    minHeight: 48,
-    gap: spacing.lg,
-  },
-  rowDivider: {borderTopWidth: 1, borderTopColor: c.border},
-  rowLabel: {...type.callout, color: c.textSecondary},
-  rowValue: {...type.callout, fontWeight: '500', color: c.text, flexShrink: 1, textAlign: 'right'},
-  notes: {...type.body, color: c.textBody},
-  deleteButton: {marginTop: spacing.sm},
-  missing: {flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: c.background},
-  missingText: {...type.callout, color: c.textTertiary},
-}));

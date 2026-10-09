@@ -7,13 +7,14 @@ import {CaptureGrid} from '../components/CaptureGrid';
 import {NetworkBanner} from '../components/NetworkBanner';
 import {Button, ICON_STROKE, SegmentedControl} from '../components/ui';
 import {MainTabScreenProps} from '../navigation/types';
-import {makeStyles, radius, spacing, type, useTheme} from '../theme';
+import {useTheme} from '../theme';
 import {useLayout} from '../theme/layout';
+import {useHomeScreenStyles} from '../styles/screens/HomeScreen.styles';
 
 type Filter = 'all' | 'unsynced' | 'synced';
 
 export const HomeScreen: React.FC<MainTabScreenProps<'Captures'>> = ({navigation}) => {
-  const styles = useStyles();
+  const styles = useHomeScreenStyles();
   const {colors} = useTheme();
   const {captures, progress, isOnline, retryCapture} = useSyncContext();
   const {isCompact, gutter, insets} = useLayout();
@@ -113,63 +114,3 @@ export const HomeScreen: React.FC<MainTabScreenProps<'Captures'>> = ({navigation
     </SafeAreaView>
   );
 };
-
-const useStyles = makeStyles(c => ({
-  safe: {flex: 1, backgroundColor: c.background},
-  headerBlock: {gap: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.lg},
-  filterWide: {maxWidth: 480},
-  titleRow: {flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between'},
-  largeTitle: {...type.largeTitle, color: c.text},
-  connection: {flexDirection: 'row', alignItems: 'center', gap: 6},
-  dot: {width: 8, height: 8, borderRadius: 4},
-  connectionText: {...type.footnote, color: c.textSecondary},
-  empty: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: spacing.xl,
-    paddingBottom: 80,
-  },
-  emptyIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: c.surfaceMuted,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.lg,
-  },
-  emptyTitle: {...type.title, color: c.text},
-  emptyBody: {
-    ...type.callout,
-    color: c.textBody,
-    textAlign: 'center',
-    marginTop: spacing.sm,
-    maxWidth: 300,
-  },
-  emptyButton: {marginTop: spacing.xl, alignSelf: 'center', width: '100%', maxWidth: 360},
-  filterEmpty: {
-    ...type.callout,
-    color: c.textTertiary,
-    textAlign: 'center',
-    marginTop: spacing.xxl,
-  },
-  fab: {
-    position: 'absolute',
-    bottom: spacing.lg,
-    height: 52,
-    paddingHorizontal: spacing.xl - 4,
-    borderRadius: radius.pill,
-    backgroundColor: c.primary,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    shadowColor: '#000',
-    shadowOpacity: 0.18,
-    shadowRadius: 10,
-    shadowOffset: {width: 0, height: 4},
-    elevation: 4,
-  },
-  fabPressed: {opacity: 0.85},
-  fabLabel: {...type.headline, color: c.onPrimary},
-}));

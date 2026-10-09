@@ -37,8 +37,8 @@ import {
 import {MAX_ATTACHMENTS, MediaService, MediaSource} from '../services/MediaService';
 import {AttachmentThumb} from './AttachmentThumb';
 import {Button, CAPTURE_TYPE_ICONS, ICON_STROKE, IconButton, SegmentedControl} from './ui';
-import {TOUCH_TARGET, makeStyles, radius, spacing, type, useTheme} from '../theme';
-import {READING_WIDTH} from '../theme/layout';
+import {useTheme} from '../theme';
+import {useCaptureFormStyles} from '../styles/components/CaptureForm.styles';
 
 interface Props {
   /** Existing capture to edit; omit to create a new one. */
@@ -74,7 +74,7 @@ const NOTES_PLACEHOLDER: Record<CaptureType, string> = {
 };
 
 export const CaptureForm: React.FC<Props> = ({initial, onSave, onCancel}) => {
-  const styles = useStyles();
+  const styles = useCaptureFormStyles();
   const {colors} = useTheme();
   const editing = !!initial;
   const [captureType, setCaptureType] = useState<CaptureType>(initial?.captureType ?? 'daily_log');
@@ -326,7 +326,7 @@ export const CaptureForm: React.FC<Props> = ({initial, onSave, onCancel}) => {
 };
 
 const FieldLabel: React.FC<{text: string; first?: boolean}> = ({text, first}) => {
-  const styles = useStyles();
+  const styles = useCaptureFormStyles();
   return <Text style={[styles.label, first && styles.labelFirst]}>{text}</Text>;
 };
 
@@ -338,7 +338,7 @@ const Field: React.FC<
     inputStyle?: object;
   }
 > = ({label, error, containerStyle, inputStyle, ...input}) => {
-  const styles = useStyles();
+  const styles = useCaptureFormStyles();
   const {colors} = useTheme();
   const [focused, setFocused] = useState(false);
   return (
@@ -367,86 +367,3 @@ const Field: React.FC<
     </View>
   );
 };
-
-const useStyles = makeStyles(c => ({
-  safe: {flex: 1, backgroundColor: c.background},
-  flex: {flex: 1},
-  navBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: c.border,
-  },
-  navTitle: {...type.headline, color: c.text},
-  navSpacer: {width: 40},
-  scroll: {
-    width: '100%',
-    maxWidth: READING_WIDTH + spacing.lg * 2,
-    alignSelf: 'center',
-    padding: spacing.lg,
-    paddingBottom: spacing.xl,
-  },
-  bleed: {marginHorizontal: -spacing.lg, flexGrow: 0},
-  label: {
-    ...type.label,
-    color: c.textSecondary,
-    marginTop: spacing.xl,
-    marginBottom: spacing.sm,
-  },
-  labelFirst: {marginTop: 0},
-  chipRow: {gap: spacing.sm, paddingHorizontal: spacing.lg},
-  wrapRow: {flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm},
-  chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    minHeight: 40,
-    paddingHorizontal: 14,
-    borderRadius: radius.pill,
-    backgroundColor: c.surface,
-    borderWidth: 1,
-    borderColor: c.border,
-  },
-  chipSelected: {backgroundColor: c.primary, borderColor: c.primary},
-  chipText: {...type.label, fontWeight: '500', color: c.textBody},
-  chipTextSelected: {color: c.onPrimary, fontWeight: '600'},
-  input: {
-    ...type.body,
-    minHeight: TOUCH_TARGET,
-    backgroundColor: c.surface,
-    borderRadius: radius.sm + 2,
-    borderWidth: 1,
-    borderColor: c.border,
-    color: c.text,
-    paddingHorizontal: spacing.md + 2,
-    paddingVertical: spacing.md,
-  },
-  inputFocused: {borderColor: c.primary},
-  inputError: {borderColor: c.danger},
-  errorText: {...type.footnote, color: c.danger, marginTop: 6},
-  notesInput: {minHeight: 112},
-  workersField: {width: 160},
-  mediaButtons: {flexDirection: 'row', gap: spacing.sm},
-  thumbRow: {gap: spacing.sm, paddingHorizontal: spacing.lg, paddingTop: spacing.md},
-  importingTile: {
-    width: 80,
-    height: 80,
-    borderRadius: radius.sm,
-    backgroundColor: c.surfaceMuted,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  footnote: {...type.footnote, color: c.textTertiary, marginTop: spacing.xl},
-  footer: {
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: c.border,
-    backgroundColor: c.background,
-  },
-  footerInner: {width: '100%', maxWidth: READING_WIDTH, alignSelf: 'center'},
-}));
