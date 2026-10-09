@@ -1,5 +1,5 @@
 import React, {useState} from 'react';
-import {FlatList, Switch, Text, View} from 'react-native';
+import {Switch, Text, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {
   CircleAlert,
@@ -10,11 +10,12 @@ import {
   RefreshCw,
 } from 'lucide-react-native';
 import {useSyncContext} from '../context/SyncContext';
-import {CaptureCard} from '../components/CaptureCard';
+import {CaptureGrid} from '../components/CaptureGrid';
 import {Button, ICON_STROKE, SectionHeader} from '../components/ui';
 import {MainTabScreenProps} from '../navigation/types';
 import {SyncService} from '../services/SyncService';
 import {makeStyles, radius, spacing, type, useTheme} from '../theme';
+import {READING_WIDTH} from '../theme/layout';
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
@@ -123,36 +124,25 @@ export const SyncScreen: React.FC<MainTabScreenProps<'Sync'>> = ({navigation}) =
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
-      <FlatList
+      <CaptureGrid
         data={queue}
-        keyExtractor={item => item.id}
-        extraData={progress}
-        ListHeaderComponent={header}
-        ListFooterComponent={footer}
-        ItemSeparatorComponent={Separator}
-        renderItem={({item}) => (
-          <CaptureCard
-            capture={item}
-            progress={progress[item.id]}
-            onPress={() => navigation.navigate('CaptureDetail', {captureId: item.id})}
-            onRetry={retryCapture}
-          />
-        )}
-        contentContainerStyle={styles.list}
-        showsVerticalScrollIndicator={false}
+        progress={progress}
+        onOpen={id => navigation.navigate('CaptureDetail', {captureId: id})}
+        onRetry={retryCapture}
+        header={header}
+        footer={footer}
+        bottomPadding={spacing.xxl}
       />
     </SafeAreaView>
   );
 };
 
-const Separator = () => <View style={{height: spacing.md}} />;
-
 const useStyles = makeStyles(c => ({
   safe: {flex: 1, backgroundColor: c.background},
-  list: {paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl, flexGrow: 1},
   headerBlock: {gap: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.xs},
   largeTitle: {...type.largeTitle, color: c.text},
   statusCard: {
+    maxWidth: READING_WIDTH,
     backgroundColor: c.surface,
     borderRadius: radius.md,
     borderWidth: 1,
@@ -164,7 +154,7 @@ const useStyles = makeStyles(c => ({
   statusText: {flex: 1},
   statusTitle: {...type.title, color: c.text},
   statusDetail: {...type.subhead, color: c.textBody, marginTop: 2},
-  footerBlock: {marginTop: spacing.xxl},
+  footerBlock: {marginTop: spacing.xxl, maxWidth: READING_WIDTH},
   settingRow: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -38,6 +38,7 @@ import {MAX_ATTACHMENTS, MediaService, MediaSource} from '../services/MediaServi
 import {AttachmentThumb} from './AttachmentThumb';
 import {Button, CAPTURE_TYPE_ICONS, ICON_STROKE, IconButton, SegmentedControl} from './ui';
 import {TOUCH_TARGET, makeStyles, radius, spacing, type, useTheme} from '../theme';
+import {READING_WIDTH} from '../theme/layout';
 
 interface Props {
   onSave: (capture: FieldCapture) => void;
@@ -306,7 +307,9 @@ export const CaptureForm: React.FC<Props> = ({onSave, onCancel}) => {
         </ScrollView>
 
         <View style={styles.footer}>
-          <Button title="Save capture" onPress={handleSave} disabled={importing} />
+          <View style={styles.footerInner}>
+            <Button title="Save capture" onPress={handleSave} disabled={importing} />
+          </View>
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -372,7 +375,13 @@ const useStyles = makeStyles(c => ({
   },
   navTitle: {...type.headline, color: c.text},
   navSpacer: {width: 40},
-  scroll: {padding: spacing.lg, paddingBottom: spacing.xl},
+  scroll: {
+    width: '100%',
+    maxWidth: READING_WIDTH + spacing.lg * 2,
+    alignSelf: 'center',
+    padding: spacing.lg,
+    paddingBottom: spacing.xl,
+  },
   bleed: {marginHorizontal: -spacing.lg, flexGrow: 0},
   label: {
     ...type.label,
@@ -432,4 +441,5 @@ const useStyles = makeStyles(c => ({
     borderTopColor: c.border,
     backgroundColor: c.background,
   },
+  footerInner: {width: '100%', maxWidth: READING_WIDTH, alignSelf: 'center'},
 }));

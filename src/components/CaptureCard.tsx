@@ -1,5 +1,5 @@
 import React from 'react';
-import {Pressable, Text, View} from 'react-native';
+import {Pressable, StyleProp, Text, View, ViewStyle} from 'react-native';
 import {RotateCw} from 'lucide-react-native';
 import {FieldCapture, CAPTURE_TYPE_LABELS, PRIORITY_LABELS} from '../types';
 import {SyncBadge} from './SyncBadge';
@@ -14,11 +14,12 @@ interface Props {
   progress?: number;
   onPress: () => void;
   onRetry: (id: string) => void;
+  style?: StyleProp<ViewStyle>;
 }
 
 const MAX_THUMBS = 4;
 
-export const CaptureCard: React.FC<Props> = ({capture, progress, onPress, onRetry}) => {
+export const CaptureCard: React.FC<Props> = ({capture, progress, onPress, onRetry, style}) => {
   const styles = useStyles();
   const {colors} = useTheme();
   const attachments = capture.attachments ?? [];
@@ -31,7 +32,7 @@ export const CaptureCard: React.FC<Props> = ({capture, progress, onPress, onRetr
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={`${CAPTURE_TYPE_LABELS[capture.captureType]}, ${capture.projectName}`}
-      style={({pressed}) => [styles.card, pressed && styles.pressed]}>
+      style={({pressed}) => [styles.card, pressed && styles.pressed, style]}>
       <View style={styles.header}>
         <CaptureTypeIcon captureType={capture.captureType} />
         <View style={styles.headerText}>

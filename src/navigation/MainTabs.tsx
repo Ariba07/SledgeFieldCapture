@@ -7,6 +7,7 @@ import {SyncScreen} from '../screens/SyncScreen';
 import {useSyncContext} from '../context/SyncContext';
 import {ICON_STROKE} from '../components/ui';
 import {useTheme} from '../theme';
+import {useLayout} from '../theme/layout';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
@@ -20,6 +21,8 @@ const SyncIcon = ({color, size}: TabIconProps) => (
 
 export const MainTabs: React.FC = () => {
   const {colors} = useTheme();
+  // Tablets and wide windows get a side rail instead of a bottom bar.
+  const rail = useLayout().sizeClass === 'expanded';
   const {captures} = useSyncContext();
   const unsyncedCount = captures.filter(c => c.syncStatus !== 'synced').length;
 
@@ -29,7 +32,11 @@ export const MainTabs: React.FC = () => {
         headerShown: false,
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.textTertiary,
-        tabBarStyle: {backgroundColor: colors.background, borderTopColor: colors.border},
+        tabBarPosition: rail ? 'left' : 'bottom',
+        tabBarVariant: rail ? 'material' : 'uikit',
+        tabBarStyle: rail
+          ? {backgroundColor: colors.background, borderRightColor: colors.border}
+          : {backgroundColor: colors.background, borderTopColor: colors.border},
         tabBarLabelStyle: {fontSize: 11, fontWeight: '600'},
       }}>
       <Tab.Screen

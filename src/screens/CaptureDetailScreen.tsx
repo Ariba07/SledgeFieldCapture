@@ -10,6 +10,9 @@ import {Attachment, CAPTURE_TYPE_LABELS, FieldCapture, PRIORITY_LABELS} from '..
 import {formatBytes, formatDuration, formatTimestamp} from '../utils/helpers';
 import {attachmentUri} from '../services/MediaService';
 import {makeStyles, radius, spacing, type, useTheme} from '../theme';
+import {READING_WIDTH, useLayout} from '../theme/layout';
+
+const WIDE_WIDTH = 1180;
 
 const statusDetail = (c: FieldCapture, isOnline: boolean): string => {
   switch (c.syncStatus) {
@@ -34,6 +37,7 @@ export const CaptureDetailScreen: React.FC<RootStackScreenProps<'CaptureDetail'>
   const styles = useStyles();
   const {colors} = useTheme();
   const {captures, progress, isOnline, retryCapture, deleteCapture} = useSyncContext();
+  const {sizeClass, gutter} = useLayout();
   const capture = captures.find(c => c.id === route.params.captureId);
 
   useLayoutEffect(() => {
@@ -64,6 +68,9 @@ export const CaptureDetailScreen: React.FC<RootStackScreenProps<'CaptureDetail'>
     ]);
   };
 
+  const attachments = capture.attachments ?? [];
+  // Wide windows: info on the left, media on the right.
+  const twoColumn = sizeClass === 'expanded' && attachments.length > 0;
   const percent = progress[capture.id] != null ? Math.round(progress[capture.id] * 100) : null;
   const details: [string, string, string?][] = [
     ['Priority', PRIORITY_LABELS[capture.priority], colors.priority[capture.priority]],
@@ -75,86 +82,93 @@ export const CaptureDetailScreen: React.FC<RootStackScreenProps<'CaptureDetail'>
   ];
 
   return (
-    <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
-      {/* Title */}
-      <View style={styles.titleBlock}>
-        <CaptureTypeIcon captureType={capture.captureType} size={44} />
-        <View style={styles.titleText}>
-          <Text style={styles.title}>{capture.projectName}</Text>
-          <View style={styles.locationRow}>
-            <MapPin size={14} color={colors.textSecondary} strokeWidth={ICON_STROKE} />
-            <Text style={styles.location}>{capture.location}</Text>
-          </View>
-        </View>
-      </View>
-
-      {/* Sync status */}
-      <View style={styles.card}>
-        <SyncBadge status={capture.syncStatus} retryCount={capture.retryCount} />
-        <Text
-          style={[
-            styles.statusDetail,
-            capture.syncStatus === 'error' && {color: colors.status.error},
-          ]}>
-          {statusDetail(capture, isOnline)}
-        </Text>
-        {capture.syncStatus === 'syncing' && percent != null ? (
-          <View style={styles.progressTrack}>
-            <View style={[styles.progressFill, {width: `${percent}%`}]} />
-          </View>
-        ) : null}
-        {capture.syncStatus === 'error' ? (
-          <Button
-            title="Retry upload"
-            icon={RotateCw}
-            onPress={() => retryCapture(capture.id)}
-            style={styles.retryButton}
-          />
-        ) : null}
-      </View>
-
-      {/* Details */}
-      <View style={styles.section}>
-        <SectionHeader title="Details" />
-        <View style={styles.group}>
-          {details.map(([label, value, color], i) => (
-            <View key={label} style={[styles.row, i > 0 && styles.rowDivider]}>
-              <Text style={styles.rowLabel}>{label}</Text>
-              <Text style={[styles.rowValue, color ? {color} : null]}>{value}</Text>
+    <ScrollView
+      style={styles.screen}
+      contentContainerStyle={[
+        styles.content,
+        {padding: gutter, maxWidth: twoColumn ? WIDE_WIDTH : READING_WIDTH + gutter * 2},
+      ]}>
+      <View style={[styles.columns, twoColumn && styles.columnsWide]}>
+        <View style={[styles.column, twoColumn && styles.infoColumn]}>
+          {/* Title */}
+          <View style={styles.titleBlock}>
+            <CaptureTypeIcon captureType={capture.captureType} size={44} />
+            <View style={styles.titleText}>
+              <Text style={styles.title}>{capture.projectName}</Text>
+              <View style={styles.locationRow}>
+                <MapPin size={14} color={colors.textSecondary} strokeWidth={ICON_STROKE} />
+                <Text style={styles.location}>{capture.location}</Text>
+              </View>
             </View>
-          ))}
-        </View>
-      </View>
+          </View>
 
-      {/* Notes */}
-      {capture.notes ? (
-        <View style={styles.section}>
-          <SectionHeader title="Notes" />
+          {/* Sync status */}
           <View style={styles.card}>
-            <Text style={styles.notes}>{capture.notes}</Text>
+            <SyncBadge status={capture.syncStatus} retryCount={capture.retryCount} />
+            <Text
+              style={[
+                styles.statusDetail,
+                capture.syncStatus === 'error' && {color: colors.status.error},
+              ]}>
+              {statusDetail(capture, isOnline)}
+            </Text>
+            {capture.syncStatus === 'syncing' && percent != null ? (
+              <View style={styles.progressTrack}>
+                <View style={[styles.progressFill, {width: `${percent}%`}]} />
+              </View>
+            ) : null}
+            {capture.syncStatus === 'error' ? (
+              <Button
+                title="Retry upload"
+                icon={RotateCw}
+                onPress={() => retryCapture(capture.id)}
+                style={styles.retryButton}
+              />
+            ) : null}
           </View>
-        </View>
-      ) : null}
 
-      {/* Media */}
-      {capture.attachments?.length ? (
-        <View style={styles.section}>
-          <SectionHeader title={`Photos & videos · ${capture.attachments.length}`} />
-          <View style={styles.mediaList}>
-            {capture.attachments.map(a => (
-              <MediaItem key={a.id} attachment={a} />
-            ))}
+          {/* Details */}
+          <View style={styles.section}>
+            <SectionHeader title="Details" />
+            <View style={styles.group}>
+              {details.map(([label, value, color], i) => (
+                <View key={label} style={[styles.row, i > 0 && styles.rowDivider]}>
+                  <Text style={styles.rowLabel}>{label}</Text>
+                  <Text style={[styles.rowValue, color ? {color} : null]}>{value}</Text>
+                </View>
+              ))}
+            </View>
           </View>
-        </View>
-      ) : null}
 
-      <Button
-        title="Delete capture"
-        icon={Trash2}
-        variant="destructive"
-        onPress={handleDelete}
-        style={styles.deleteButton}
-      />
+          {/* Notes */}
+          {capture.notes ? (
+            <View style={styles.section}>
+              <SectionHeader title="Notes" />
+              <View style={styles.card}>
+                <Text style={styles.notes}>{capture.notes}</Text>
+              </View>
+            </View>
+          ) : null}
+
+          <Button
+            title="Delete capture"
+            icon={Trash2}
+            variant="destructive"
+            onPress={handleDelete}
+            style={styles.deleteButton}
+          />
+        </View>
+        {attachments.length > 0 ? (
+          <View style={[styles.column, twoColumn && styles.mediaColumn]}>
+            <SectionHeader title={`Photos & videos · ${attachments.length}`} />
+            <View style={styles.mediaList}>
+              {attachments.map(a => (
+                <MediaItem key={a.id} attachment={a} />
+              ))}
+            </View>
+          </View>
+        ) : null}
+      </View>
     </ScrollView>
   );
 };
@@ -202,7 +216,12 @@ const MediaItem: React.FC<{attachment: Attachment}> = ({attachment: a}) => {
 
 const useStyles = makeStyles(c => ({
   screen: {flex: 1, backgroundColor: c.background},
-  content: {padding: spacing.lg, paddingBottom: spacing.xxl * 2, gap: spacing.xl},
+  content: {width: '100%', alignSelf: 'center', paddingBottom: spacing.xxl * 2},
+  columns: {gap: spacing.xl},
+  columnsWide: {flexDirection: 'row', alignItems: 'flex-start', gap: spacing.xxl},
+  column: {gap: spacing.xl},
+  infoColumn: {flex: 2, minWidth: 0},
+  mediaColumn: {flex: 3, minWidth: 0},
   titleBlock: {flexDirection: 'row', alignItems: 'center', gap: spacing.md},
   titleText: {flex: 1},
   title: {...type.title, fontSize: 22, lineHeight: 28, color: c.text},

@@ -21,7 +21,8 @@ A field-capture app for the jobsite: record Daily Logs, RFIs, Punchlist items, I
 | ⏱ **Back-off** | Failed uploads retry after 2s, 4s… then move to `error` |
 | ✋ **Manual retry** | Retry button on `error` items, plus **Sync now** |
 | 🧪 **Demo switch** | "Simulate server errors" on the Sync tab to show failures on demand |
-| 🎨 **High-contrast dark UI** | Readable outdoors on a jobsite |
+| 🎨 **Design system** | Token-based dark theme, Lucide icons, 48pt+ touch targets for gloved hands |
+| 📱 **Responsive** | Phone, phone landscape, iPad / Android tablets, split view: 1–3 column grid, side rail on wide windows, centred reading width for forms and details |
 
 ---
 
@@ -36,6 +37,7 @@ src/
 │   ├── MediaService.ts            — Camera / library picking, copies files into Documents
 │   └── SyncService.ts             — Upload transport (mock; real fetch shown in comments)
 ├── hooks/useSync.ts               — Wires SyncEngine to React + NetInfo
+├── theme/                         — Design tokens + responsive layout (size classes)
 ├── context/SyncContext.tsx        — One shared engine for every screen
 ├── navigation/                    — Tabs (Captures, Sync) + stack (Detail, New)
 ├── screens/                       — Home, Sync queue, Capture detail, New capture

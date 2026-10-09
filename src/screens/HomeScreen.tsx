@@ -1,13 +1,14 @@
 import React, {useMemo, useState} from 'react';
-import {FlatList, Pressable, Text, View} from 'react-native';
+import {Pressable, Text, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {ClipboardList, Plus} from 'lucide-react-native';
 import {useSyncContext} from '../context/SyncContext';
-import {CaptureCard} from '../components/CaptureCard';
+import {CaptureGrid} from '../components/CaptureGrid';
 import {NetworkBanner} from '../components/NetworkBanner';
 import {Button, ICON_STROKE, SegmentedControl} from '../components/ui';
 import {MainTabScreenProps} from '../navigation/types';
 import {makeStyles, radius, spacing, type, useTheme} from '../theme';
+import {useLayout} from '../theme/layout';
 
 type Filter = 'all' | 'unsynced' | 'synced';
 
@@ -15,6 +16,7 @@ export const HomeScreen: React.FC<MainTabScreenProps<'Captures'>> = ({navigation
   const styles = useStyles();
   const {colors} = useTheme();
   const {captures, progress, isOnline, retryCapture} = useSyncContext();
+  const {isCompact, gutter, insets} = useLayout();
   const [filter, setFilter] = useState<Filter>('all');
 
   const unsynced = useMemo(() => captures.filter(c => c.syncStatus !== 'synced'), [captures]);
@@ -48,6 +50,7 @@ export const HomeScreen: React.FC<MainTabScreenProps<'Captures'>> = ({navigation
       <NetworkBanner isOnline={isOnline} pendingCount={unsynced.length} />
 
       {captures.length > 0 ? (
+        <View style={!isCompact && styles.filterWide}>
         <SegmentedControl<Filter>
           value={filter}
           onChange={setFilter}
@@ -57,6 +60,7 @@ export const HomeScreen: React.FC<MainTabScreenProps<'Captures'>> = ({navigation
             {value: 'synced', label: `Synced ${syncedCount}`},
           ]}
         />
+        </View>
       ) : null}
     </View>
   );
@@ -82,23 +86,14 @@ export const HomeScreen: React.FC<MainTabScreenProps<'Captures'>> = ({navigation
 
   return (
     <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
-      <FlatList
+      <CaptureGrid
         data={visible}
-        keyExtractor={item => item.id}
-        extraData={progress}
-        ListHeaderComponent={header}
-        ListEmptyComponent={empty}
-        ItemSeparatorComponent={Separator}
-        renderItem={({item}) => (
-          <CaptureCard
-            capture={item}
-            progress={progress[item.id]}
-            onPress={() => navigation.navigate('CaptureDetail', {captureId: item.id})}
-            onRetry={retryCapture}
-          />
-        )}
-        contentContainerStyle={styles.list}
-        showsVerticalScrollIndicator={false}
+        progress={progress}
+        onOpen={id => navigation.navigate('CaptureDetail', {captureId: id})}
+        onRetry={retryCapture}
+        header={header}
+        empty={empty}
+        bottomPadding={112}
       />
 
       {captures.length > 0 ? (
@@ -106,7 +101,11 @@ export const HomeScreen: React.FC<MainTabScreenProps<'Captures'>> = ({navigation
           onPress={openNew}
           accessibilityRole="button"
           accessibilityLabel="New capture"
-          style={({pressed}) => [styles.fab, pressed && styles.fabPressed]}>
+          style={({pressed}) => [
+            styles.fab,
+            {right: gutter + insets.right},
+            pressed && styles.fabPressed,
+          ]}>
           <Plus size={20} color={colors.onPrimary} strokeWidth={2.5} />
           <Text style={styles.fabLabel}>New capture</Text>
         </Pressable>
@@ -115,12 +114,10 @@ export const HomeScreen: React.FC<MainTabScreenProps<'Captures'>> = ({navigation
   );
 };
 
-const Separator = () => <View style={{height: spacing.md}} />;
-
 const useStyles = makeStyles(c => ({
   safe: {flex: 1, backgroundColor: c.background},
-  list: {paddingHorizontal: spacing.lg, paddingBottom: 112, flexGrow: 1},
   headerBlock: {gap: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.lg},
+  filterWide: {maxWidth: 480},
   titleRow: {flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between'},
   largeTitle: {...type.largeTitle, color: c.text},
   connection: {flexDirection: 'row', alignItems: 'center', gap: 6},
@@ -159,7 +156,6 @@ const useStyles = makeStyles(c => ({
   },
   fab: {
     position: 'absolute',
-    right: spacing.lg,
     bottom: spacing.lg,
     height: 52,
     paddingHorizontal: spacing.xl - 4,
