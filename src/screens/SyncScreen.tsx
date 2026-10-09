@@ -1,5 +1,6 @@
-import React from 'react';
+import React, {useState} from 'react';
 import {
+  Switch,
   View,
   Text,
   StyleSheet,
@@ -11,6 +12,7 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 import {useSyncContext} from '../context/SyncContext';
 import {CaptureCard} from '../components/CaptureCard';
 import {MainTabScreenProps} from '../navigation/types';
+import {SyncService} from '../services/SyncService';
 
 export const SyncScreen: React.FC<MainTabScreenProps<'Sync'>> = ({
   navigation,
@@ -23,6 +25,14 @@ export const SyncScreen: React.FC<MainTabScreenProps<'Sync'>> = ({
     deleteCapture,
     flushPendingCaptures,
   } = useSyncContext();
+  const [simulateErrors, setSimulateErrors] = useState(
+    SyncService.getSimulateServerErrors,
+  );
+
+  const toggleSimulateErrors = (on: boolean) => {
+    SyncService.setSimulateServerErrors(on);
+    setSimulateErrors(on);
+  };
 
   const queue = captures.filter(c => c.syncStatus !== 'synced');
   const errorCount = queue.filter(c => c.syncStatus === 'error').length;
@@ -68,6 +78,21 @@ export const SyncScreen: React.FC<MainTabScreenProps<'Sync'>> = ({
             Sync now
           </Text>
         </TouchableOpacity>
+
+        <View style={styles.demoRow}>
+          <View style={styles.demoTextCol}>
+            <Text style={styles.demoTitle}>Simulate server errors</Text>
+            <Text style={styles.demoHint}>
+              Demo only — uploads fail with 503 so you can see retry and error states
+            </Text>
+          </View>
+          <Switch
+            value={simulateErrors}
+            onValueChange={toggleSimulateErrors}
+            trackColor={{true: '#B91C1C', false: '#334155'}}
+            accessibilityLabel="Simulate server errors"
+          />
+        </View>
       </View>
 
       <FlatList
@@ -128,6 +153,20 @@ const styles = StyleSheet.create({
   syncBtnDisabled: {backgroundColor: '#1E293B'},
   syncBtnText: {color: '#BFDBFE', fontWeight: '700', fontSize: 15},
   syncBtnTextDisabled: {color: '#475569'},
+  demoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginTop: 14,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: '#334155',
+  },
+  demoTextCol: {flex: 1},
+  demoTitle: {fontSize: 14, fontWeight: '700', color: '#E2E8F0'},
+  demoHint: {fontSize: 11, color: '#64748B', marginTop: 2},
   list: {padding: 16, flexGrow: 1},
   empty: {flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 80},
   emptyIcon: {fontSize: 48, marginBottom: 12},

@@ -5,6 +5,7 @@ import {SyncStatus} from '../types';
 interface Props {
   status: SyncStatus;
   errorMessage?: string;
+  retryCount?: number;
 }
 
 const STATUS_CONFIG: Record<
@@ -17,7 +18,7 @@ const STATUS_CONFIG: Record<
   error:   {label: 'Error',    color: '#EF4444', bg: '#FEE2E2', icon: '✕'},
 };
 
-export const SyncBadge: React.FC<Props> = ({status, errorMessage}) => {
+export const SyncBadge: React.FC<Props> = ({status, errorMessage, retryCount = 0}) => {
   const cfg = STATUS_CONFIG[status];
   const spinValue = React.useRef(new Animated.Value(0)).current;
 
@@ -59,6 +60,11 @@ export const SyncBadge: React.FC<Props> = ({status, errorMessage}) => {
           {errorMessage}
         </Text>
       ) : null}
+      {status === 'pending' && retryCount > 0 ? (
+        <Text style={styles.retryText} numberOfLines={1}>
+          {retryCount} failed · retrying
+        </Text>
+      ) : null}
     </View>
   );
 };
@@ -80,5 +86,10 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: '#EF4444',
     maxWidth: 160,
+  },
+  retryText: {
+    marginTop: 2,
+    fontSize: 10,
+    color: '#F59E0B',
   },
 });

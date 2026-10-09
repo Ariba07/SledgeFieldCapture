@@ -1,10 +1,24 @@
+/**
+ * StorageService – AsyncStorage persistence for captures.
+ *
+ * The SyncEngine owns the in-memory list and persists full snapshots through
+ * `saveAll`. Writes are chained so they hit disk in call order: a slow write
+ * can never land after (and overwrite) a newer one.
+ */
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {FieldCapture} from '../types';
 
 const STORAGE_KEY = '@sledge_captures';
 
-export const StorageService = {
-  async getAll(): Promise<FieldCapture[]> {
+export interface CaptureStore {
+  getAll(): Promise<FieldCapture[]>;
+  saveAll(captures: FieldCapture[]): Promise<void>;
+}
+
+let writeChain: Promise<void> = Promise.resolve();
+
+export const StorageService: CaptureStore & {clearAll(): Promise<void>} = {
+  async getAll() {
     try {
       const raw = await AsyncStorage.getItem(STORAGE_KEY);
       return raw ? (JSON.parse(raw) as FieldCapture[]) : [];
@@ -13,36 +27,16 @@ export const StorageService = {
     }
   },
 
-  async save(capture: FieldCapture): Promise<void> {
-    const all = await this.getAll();
-    const idx = all.findIndex(c => c.id === capture.id);
-    if (idx >= 0) {
-      all[idx] = capture;
-    } else {
-      all.unshift(capture); // newest first
-    }
-    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(all));
+  saveAll(captures) {
+    const json = JSON.stringify(captures); // snapshot now, not when the write runs
+    const write = writeChain.then(() => AsyncStorage.setItem(STORAGE_KEY, json));
+    // Keep the chain alive even if this write fails; the caller still sees the error.
+    writeChain = write.catch(() => {});
+    return write;
   },
 
-  async update(
-    id: string,
-    patch: Partial<FieldCapture>,
-  ): Promise<FieldCapture | null> {
-    const all = await this.getAll();
-    const idx = all.findIndex(c => c.id === id);
-    if (idx < 0) {return null;}
-    all[idx] = {...all[idx], ...patch};
-    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(all));
-    return all[idx];
-  },
-
-  async delete(id: string): Promise<void> {
-    const all = await this.getAll();
-    const filtered = all.filter(c => c.id !== id);
-    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
-  },
-
-  async clearAll(): Promise<void> {
+  async clearAll() {
+    await writeChain;
     await AsyncStorage.removeItem(STORAGE_KEY);
   },
 };

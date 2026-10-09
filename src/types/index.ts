@@ -32,7 +32,8 @@ export interface FieldCapture {
   syncStatus: SyncStatus;
   syncedAt?: string;       // ISO 8601 — set once synced
   errorMessage?: string;   // Last sync error message
-  retryCount: number;
+  retryCount: number;      // Failed attempts since last manual retry
+  nextRetryAt?: string;    // ISO 8601 — earliest time an automatic retry may run
 }
 
 export interface AppState {

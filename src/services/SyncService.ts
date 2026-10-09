@@ -1,30 +1,60 @@
 /**
- * SyncService – simulates an API call.
- * Replace the body of `uploadCapture` with your real endpoint.
+ * SyncService – the upload transport. Currently a mock with a toggleable
+ * failure mode so the error / retry path can be demonstrated on demand.
  *
- * Randomly fails ~20 % of the time to demonstrate the "error" state.
+ * To use a real backend, replace the body of `uploadCapture` with the fetch
+ * call below. The capture id is sent as an idempotency key, so a retry after a
+ * lost response cannot create a duplicate record on the server.
  */
 import {FieldCapture} from '../types';
 
-const SIMULATED_DELAY_MS = 1500;
-const FAIL_RATE = 0.2; // 20 % artificial failure
+const SIMULATED_DELAY_MS = 1200;
 
-export const SyncService = {
-  async uploadCapture(_capture: FieldCapture): Promise<void> {
-    // Simulate network latency
-    await new Promise(res => setTimeout(() => res(undefined), SIMULATED_DELAY_MS));
+/** Thrown by the transport. `retryable: false` skips automatic retries (e.g. 4xx). */
+export class SyncError extends Error {
+  constructor(message: string, readonly retryable = true) {
+    super(message);
+    this.name = 'SyncError';
+  }
+}
 
-    // Simulate occasional failures
-    if (Math.random() < FAIL_RATE) {
-      throw new Error('Server returned 500 – internal server error');
+export interface CaptureTransport {
+  uploadCapture(capture: FieldCapture): Promise<void>;
+}
+
+let simulateServerErrors = false;
+
+export const SyncService: CaptureTransport & {
+  setSimulateServerErrors(on: boolean): void;
+  getSimulateServerErrors(): boolean;
+} = {
+  async uploadCapture(_capture) {
+    await new Promise<void>(res => setTimeout(res, SIMULATED_DELAY_MS));
+
+    if (simulateServerErrors) {
+      throw new SyncError('Server returned 503 – service unavailable');
     }
 
-    // ── Real API call would go here ──────────────────────────────────
-    // await fetch('https://api.getsledge.com/captures', {
+    // ── Real API call ────────────────────────────────────────────────
+    // const res = await fetch('https://api.example.com/captures', {
     //   method: 'POST',
-    //   headers: {'Content-Type': 'application/json'},
+    //   headers: {
+    //     'Content-Type': 'application/json',
+    //     'Idempotency-Key': capture.id,
+    //   },
     //   body: JSON.stringify(capture),
     // });
+    // if (!res.ok) {
+    //   throw new SyncError(`Server returned ${res.status}`, res.status >= 500 || res.status === 429);
+    // }
     // ─────────────────────────────────────────────────────────────────
+  },
+
+  setSimulateServerErrors(on) {
+    simulateServerErrors = on;
+  },
+
+  getSimulateServerErrors() {
+    return simulateServerErrors;
   },
 };

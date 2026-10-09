@@ -56,6 +56,7 @@ export const CaptureDetailScreen: React.FC<
         <SyncBadge
           status={capture.syncStatus}
           errorMessage={capture.errorMessage}
+          retryCount={capture.retryCount}
         />
       </View>
 

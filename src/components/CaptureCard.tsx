@@ -59,6 +59,7 @@ export const CaptureCard: React.FC<Props> = ({
         <SyncBadge
           status={capture.syncStatus}
           errorMessage={capture.errorMessage}
+          retryCount={capture.retryCount}
         />
       </View>
 
