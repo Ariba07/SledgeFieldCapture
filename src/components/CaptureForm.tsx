@@ -1,31 +1,14 @@
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useState} from 'react';
 import {
-  ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
   Text,
-  TextInput,
-  TextInputProps,
   View,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
+import {X} from 'lucide-react-native';
 import {
-  Camera,
-  Cloud,
-  CloudRain,
-  Images,
-  LucideIcon,
-  Snowflake,
-  Sun,
-  Thermometer,
-  Video,
-  Wind,
-  X,
-} from 'lucide-react-native';
-import {
-  Attachment,
   CAPTURE_TYPE_LABELS,
   CaptureDraft,
   CaptureType,
@@ -34,18 +17,16 @@ import {
   Priority,
 } from '../types';
 import {
-  MAX_ATTACHMENTS,
-  MediaService,
-  MediaSource,
-} from '../services/MediaService';
-import {AttachmentThumb} from './AttachmentThumb';
-import {
   Button,
   CAPTURE_TYPE_ICONS,
   Chip,
   IconButton,
   SegmentedControl,
 } from './ui';
+import {Field, FieldLabel} from './captureForm/FormField';
+import {DailyLogFields} from './captureForm/DailyLogFields';
+import {MediaSection} from './captureForm/MediaSection';
+import {useDraftAttachments} from '../hooks/useDraftAttachments';
 import {useTheme} from '../theme';
 import {useCaptureFormStyles} from '../styles/components/CaptureForm.styles';
 
@@ -64,22 +45,6 @@ const CAPTURE_TYPES: CaptureType[] = [
   'inspection',
 ];
 const PRIORITIES: Priority[] = ['low', 'medium', 'high'];
-
-const WEATHER: {label: string; icon: LucideIcon}[] = [
-  {label: 'Clear', icon: Sun},
-  {label: 'Cloudy', icon: Cloud},
-  {label: 'Rain', icon: CloudRain},
-  {label: 'Windy', icon: Wind},
-  {label: 'Hot', icon: Thermometer},
-  {label: 'Cold', icon: Snowflake},
-];
-
-const MEDIA_BUTTONS: {source: MediaSource; label: string; icon: LucideIcon}[] =
-  [
-    {source: 'camera_photo', label: 'Photo', icon: Camera},
-    {source: 'camera_video', label: 'Video', icon: Video},
-    {source: 'library', label: 'Library', icon: Images},
-  ];
 
 const NOTES_PLACEHOLDER: Record<CaptureType, string> = {
   daily_log: 'Work completed, deliveries, visitors, delays…',
@@ -106,62 +71,9 @@ export const CaptureForm: React.FC<Props> = ({initial, onSave, onCancel}) => {
     initial?.workerCount != null ? String(initial.workerCount) : '',
   );
   const [weather, setWeather] = useState(initial?.weather ?? '');
-  const [attachments, setAttachments] = useState<Attachment[]>(
-    initial?.attachments ?? [],
-  );
-  const [importing, setImporting] = useState(false);
+  const {attachments, importing, addMedia, removeMedia, markSaved} =
+    useDraftAttachments(initial?.attachments);
   const [showErrors, setShowErrors] = useState(false);
-
-  // Media is copied into app storage as soon as it's picked. If the form is
-  // closed without saving (Cancel or swipe-down), delete the copies added in
-  // this session — never the files the capture already had.
-  const savedRef = useRef(false);
-  const attachmentsRef = useRef(attachments);
-  attachmentsRef.current = attachments;
-  const originalIds = useRef(
-    new Set((initial?.attachments ?? []).map(a => a.id)),
-  );
-  useEffect(
-    () => () => {
-      if (!savedRef.current) {
-        MediaService.remove(
-          attachmentsRef.current.filter(a => !originalIds.current.has(a.id)),
-        );
-      }
-    },
-    [],
-  );
-
-  const addMedia = async (source: MediaSource) => {
-    const remaining = MAX_ATTACHMENTS - attachments.length;
-    if (remaining <= 0) {
-      Alert.alert(
-        'Limit reached',
-        `You can attach up to ${MAX_ATTACHMENTS} photos or videos.`,
-      );
-      return;
-    }
-    setImporting(true);
-    try {
-      const added = await MediaService.pick(source, remaining);
-      setAttachments(prev => [...prev, ...added]);
-    } catch (err) {
-      Alert.alert(
-        "Couldn't add media",
-        err instanceof Error ? err.message : 'Something went wrong.',
-      );
-    } finally {
-      setImporting(false);
-    }
-  };
-
-  const removeMedia = (attachment: Attachment) => {
-    setAttachments(prev => prev.filter(a => a.id !== attachment.id));
-    // Files the capture already had are deleted only once the edit is saved.
-    if (!originalIds.current.has(attachment.id)) {
-      MediaService.remove([attachment]);
-    }
-  };
 
   const projectError =
     showErrors && !projectName.trim() ? 'Enter the project name.' : undefined;
@@ -174,7 +86,7 @@ export const CaptureForm: React.FC<Props> = ({initial, onSave, onCancel}) => {
       return;
     }
     const isDailyLog = captureType === 'daily_log';
-    savedRef.current = true;
+    markSaved();
     onSave({
       captureType,
       projectName: projectName.trim(),
@@ -259,30 +171,12 @@ export const CaptureForm: React.FC<Props> = ({initial, onSave, onCancel}) => {
           />
 
           {captureType === 'daily_log' ? (
-            <>
-              <Field
-                label="Workers on site"
-                value={workerCount}
-                onChangeText={t => setWorkerCount(t.replace(/[^0-9]/g, ''))}
-                placeholder="0"
-                keyboardType="number-pad"
-                containerStyle={styles.workersField}
-              />
-              <FieldLabel text="Weather" />
-              <View style={styles.wrapRow}>
-                {WEATHER.map(w => (
-                  <Chip
-                    key={w.label}
-                    label={w.label}
-                    icon={w.icon}
-                    selected={weather === w.label}
-                    onPress={() =>
-                      setWeather(weather === w.label ? '' : w.label)
-                    }
-                  />
-                ))}
-              </View>
-            </>
+            <DailyLogFields
+              workerCount={workerCount}
+              onWorkerCountChange={setWorkerCount}
+              weather={weather}
+              onWeatherChange={setWeather}
+            />
           ) : null}
 
           <Field
@@ -295,45 +189,12 @@ export const CaptureForm: React.FC<Props> = ({initial, onSave, onCancel}) => {
             inputStyle={styles.notesInput}
           />
 
-          <FieldLabel
-            text={`Photos & videos${
-              attachments.length ? ` · ${attachments.length}` : ''
-            }`}
+          <MediaSection
+            attachments={attachments}
+            importing={importing}
+            onAdd={addMedia}
+            onRemove={removeMedia}
           />
-          <View style={styles.mediaButtons}>
-            {MEDIA_BUTTONS.map(b => (
-              <Button
-                key={b.source}
-                title={b.label}
-                icon={b.icon}
-                variant="secondary"
-                onPress={() => addMedia(b.source)}
-                disabled={importing}
-                style={styles.flex}
-              />
-            ))}
-          </View>
-          {attachments.length > 0 || importing ? (
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.thumbRow}
-              style={styles.bleed}>
-              {attachments.map(a => (
-                <AttachmentThumb
-                  key={a.id}
-                  attachment={a}
-                  size={80}
-                  onRemove={removeMedia}
-                />
-              ))}
-              {importing ? (
-                <View style={styles.importingTile}>
-                  <ActivityIndicator color={colors.textSecondary} />
-                </View>
-              ) : null}
-            </ScrollView>
-          ) : null}
 
           <Text style={styles.footnote}>
             Saved to this device first, then uploaded automatically when you’re
@@ -352,51 +213,5 @@ export const CaptureForm: React.FC<Props> = ({initial, onSave, onCancel}) => {
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
-  );
-};
-
-const FieldLabel: React.FC<{text: string; first?: boolean}> = ({
-  text,
-  first,
-}) => {
-  const styles = useCaptureFormStyles();
-  return <Text style={[styles.label, first && styles.labelFirst]}>{text}</Text>;
-};
-
-const Field: React.FC<
-  TextInputProps & {
-    label: string;
-    error?: string;
-    containerStyle?: object;
-    inputStyle?: object;
-  }
-> = ({label, error, containerStyle, inputStyle, ...input}) => {
-  const styles = useCaptureFormStyles();
-  const {colors} = useTheme();
-  const [focused, setFocused] = useState(false);
-  return (
-    <View style={containerStyle}>
-      <FieldLabel text={label} />
-      <TextInput
-        {...input}
-        onFocus={e => {
-          setFocused(true);
-          input.onFocus?.(e);
-        }}
-        onBlur={e => {
-          setFocused(false);
-          input.onBlur?.(e);
-        }}
-        placeholderTextColor={colors.textTertiary}
-        accessibilityLabel={label}
-        style={[
-          styles.input,
-          focused && styles.inputFocused,
-          error ? styles.inputError : null,
-          inputStyle,
-        ]}
-      />
-      {error ? <Text style={styles.errorText}>{error}</Text> : null}
-    </View>
   );
 };

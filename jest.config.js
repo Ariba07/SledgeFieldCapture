@@ -1,6 +1,8 @@
 module.exports = {
   preset: '@react-native/jest-preset',
   setupFiles: ['./jest.setup.js'],
+  // Shared fakes live next to the tests but aren't test files themselves.
+  testPathIgnorePatterns: ['/node_modules/', '/__tests__/support/'],
   // Jest resolves lucide's untransformed .mjs build via the "react-native" field.
   moduleNameMapper: {
     '^lucide-react-native$':
