@@ -3,7 +3,11 @@ import {READING_WIDTH} from '../../theme/layout';
 
 export const useSyncScreenStyles = makeStyles(c => ({
   safe: {flex: 1, backgroundColor: c.background},
-  headerBlock: {gap: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.xs},
+  headerBlock: {
+    gap: spacing.lg,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.xs,
+  },
   largeTitle: {...type.largeTitle, color: c.text},
   statusCard: {
     maxWidth: READING_WIDTH,

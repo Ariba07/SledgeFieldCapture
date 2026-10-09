@@ -17,7 +17,9 @@ const isReachable = (state: NetInfoState) =>
   !!state.isConnected && state.isInternetReachable !== false;
 
 export const useSync = () => {
-  const [engine, setEngine] = useState(() => new SyncEngine(StorageService, SyncService));
+  const [engine, setEngine] = useState(
+    () => new SyncEngine(StorageService, SyncService),
+  );
 
   // Dev only: Fast Refresh swaps in a new SyncEngine class but keeps hook
   // state, leaving an instance of the old class (missing any new methods).
@@ -50,7 +52,9 @@ export const useSync = () => {
         // Delete files the edit removed, now that the change is persisted.
         if (before && changes.attachments) {
           const kept = new Set(changes.attachments.map(a => a.id));
-          await MediaService.remove(before.attachments?.filter(a => !kept.has(a.id)));
+          await MediaService.remove(
+            before.attachments?.filter(a => !kept.has(a.id)),
+          );
         }
       },
       deleteCapture: async (id: string) => {

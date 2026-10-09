@@ -23,15 +23,15 @@ import {formatDuration} from '../utils/helpers';
 import {spacing} from '../theme';
 import {useMediaViewerScreenStyles} from '../styles/screens/MediaViewerScreen.styles';
 
-export const MediaViewerScreen: React.FC<RootStackScreenProps<'MediaViewer'>> = ({
-  navigation,
-  route,
-}) => {
+export const MediaViewerScreen: React.FC<
+  RootStackScreenProps<'MediaViewer'>
+> = ({navigation, route}) => {
   const styles = useMediaViewerScreenStyles();
   const insets = useSafeAreaInsets();
   const {width, height} = useWindowDimensions();
   const {captures} = useSyncContext();
-  const attachments = captures.find(c => c.id === route.params.captureId)?.attachments ?? [];
+  const attachments =
+    captures.find(c => c.id === route.params.captureId)?.attachments ?? [];
   const [requested, setIndex] = useState(route.params.index);
   // Clamp at render: the list can be empty for a moment while captures load.
   const index = Math.min(requested, Math.max(0, attachments.length - 1));
@@ -61,7 +61,11 @@ export const MediaViewerScreen: React.FC<RootStackScreenProps<'MediaViewer'>> = 
         renderItem={({item, index: i}) => (
           <View style={{width, height}}>
             {item.kind === 'photo' ? (
-              <ZoomablePhoto uri={attachmentUri(item)} width={width} height={height} />
+              <ZoomablePhoto
+                uri={attachmentUri(item)}
+                width={width}
+                height={height}
+              />
             ) : (
               <Video
                 source={{uri: attachmentUri(item)}}
@@ -75,7 +79,9 @@ export const MediaViewerScreen: React.FC<RootStackScreenProps<'MediaViewer'>> = 
         )}
       />
 
-      <View style={[styles.topBar, {paddingTop: insets.top + spacing.sm}]} pointerEvents="box-none">
+      <View
+        style={[styles.topBar, {paddingTop: insets.top + spacing.sm}]}
+        pointerEvents="box-none">
         <Pressable
           onPress={navigation.goBack}
           hitSlop={12}
@@ -93,7 +99,11 @@ export const MediaViewerScreen: React.FC<RootStackScreenProps<'MediaViewer'>> = 
           {current ? (
             <Text style={styles.caption}>
               {current.kind === 'video'
-                ? `Video${current.durationSec != null ? ` · ${formatDuration(current.durationSec)}` : ''}`
+                ? `Video${
+                    current.durationSec != null
+                      ? ` · ${formatDuration(current.durationSec)}`
+                      : ''
+                  }`
                 : 'Photo'}
               {current.remoteUrl ? ' · Uploaded' : ' · Not uploaded yet'}
             </Text>
@@ -122,7 +132,12 @@ const ZoomablePhoto: React.FC<{uri: string; width: number; height: number}> = ({
       bouncesZoom
       showsHorizontalScrollIndicator={false}
       showsVerticalScrollIndicator={false}>
-      <Image source={{uri}} style={{width, height}} resizeMode="contain" accessibilityRole="image" />
+      <Image
+        source={{uri}}
+        style={{width, height}}
+        resizeMode="contain"
+        accessibilityRole="image"
+      />
     </ScrollView>
   );
 };

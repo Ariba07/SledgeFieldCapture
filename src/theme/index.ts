@@ -47,7 +47,12 @@ export const radius = {sm: 8, md: 12, lg: 16, pill: 999} as const;
 export const TOUCH_TARGET = 48;
 
 export const type = {
-  largeTitle: {fontSize: 30, lineHeight: 36, fontWeight: '700', letterSpacing: -0.4},
+  largeTitle: {
+    fontSize: 30,
+    lineHeight: 36,
+    fontWeight: '700',
+    letterSpacing: -0.4,
+  },
   title: {fontSize: 20, lineHeight: 26, fontWeight: '600', letterSpacing: -0.2},
   headline: {fontSize: 16, lineHeight: 21, fontWeight: '600'},
   body: {fontSize: 16, lineHeight: 22, fontWeight: '400'},
@@ -72,8 +77,10 @@ type Styles = Record<string, ViewStyle | TextStyle | ImageStyle>;
 export const makeStyles =
   // `S & Styles` gives the factory's object literal contextual typing, as
   // StyleSheet.create does, so 'row' stays 'row' rather than widening to string.
-  <S extends Styles>(factory: (colors: Colors) => S & Styles) =>
-  (): Readonly<S> => {
-    const {colors} = useTheme();
-    return useMemo(() => StyleSheet.create(factory(colors)), [colors]);
-  };
+
+
+    <S extends Styles>(factory: (colors: Colors) => S & Styles) =>
+    (): Readonly<S> => {
+      const {colors} = useTheme();
+      return useMemo(() => StyleSheet.create(factory(colors)), [colors]);
+    };

@@ -30,13 +30,22 @@ const ATTACHMENTS_DIR = `${DocumentDirectoryPath}/attachments`;
 
 export class MediaError extends Error {}
 
-export const attachmentPath = (a: Attachment) => `${ATTACHMENTS_DIR}/${a.fileName}`;
+export const attachmentPath = (a: Attachment) =>
+  `${ATTACHMENTS_DIR}/${a.fileName}`;
 export const attachmentUri = (a: Attachment) => `file://${attachmentPath(a)}`;
 
-const launch = (source: MediaSource, limit: number): Promise<ImagePickerResponse> => {
+const launch = (
+  source: MediaSource,
+  limit: number,
+): Promise<ImagePickerResponse> => {
   switch (source) {
     case 'camera_photo':
-      return launchCamera({mediaType: 'photo', quality: 0.8, maxWidth: 2048, maxHeight: 2048});
+      return launchCamera({
+        mediaType: 'photo',
+        quality: 0.8,
+        maxWidth: 2048,
+        maxHeight: 2048,
+      });
     case 'camera_video':
       return launchCamera({
         mediaType: 'video',
@@ -83,9 +92,14 @@ const importAsset = async (asset: Asset): Promise<Attachment> => {
     durationSec: isVideo ? asset.duration : undefined,
   };
 
-  await copyFile(decodeURI(asset.uri.replace('file://', '')), attachmentPath(attachment));
+  await copyFile(
+    decodeURI(asset.uri.replace('file://', '')),
+    attachmentPath(attachment),
+  );
   if (!attachment.sizeBytes) {
-    attachment.sizeBytes = Number((await stat(attachmentPath(attachment))).size);
+    attachment.sizeBytes = Number(
+      (await stat(attachmentPath(attachment))).size,
+    );
   }
   return attachment;
 };
@@ -95,19 +109,28 @@ export const MediaService = {
    * Opens the camera or library and returns the chosen media, already copied
    * into app storage. Returns [] if the user cancels.
    */
-  async pick(source: MediaSource, limit = MAX_ATTACHMENTS): Promise<Attachment[]> {
+  async pick(
+    source: MediaSource,
+    limit = MAX_ATTACHMENTS,
+  ): Promise<Attachment[]> {
     const res = await launch(source, limit);
     if (res.didCancel) {
       return [];
     }
     if (res.errorCode === 'camera_unavailable') {
-      throw new MediaError('No camera is available on this device. Use the library instead.');
+      throw new MediaError(
+        'No camera is available on this device. Use the library instead.',
+      );
     }
     if (res.errorCode === 'permission') {
-      throw new MediaError('Camera or photo access is turned off. Enable it in Settings.');
+      throw new MediaError(
+        'Camera or photo access is turned off. Enable it in Settings.',
+      );
     }
     if (res.errorCode) {
-      throw new MediaError(res.errorMessage ?? 'Could not open the camera or library.');
+      throw new MediaError(
+        res.errorMessage ?? 'Could not open the camera or library.',
+      );
     }
 
     await mkdir(ATTACHMENTS_DIR);
@@ -116,6 +139,8 @@ export const MediaService = {
 
   /** Best-effort delete; a missing file is not an error. */
   async remove(attachments: Attachment[] = []): Promise<void> {
-    await Promise.all(attachments.map(a => unlink(attachmentPath(a)).catch(() => {})));
+    await Promise.all(
+      attachments.map(a => unlink(attachmentPath(a)).catch(() => {})),
+    );
   },
 };

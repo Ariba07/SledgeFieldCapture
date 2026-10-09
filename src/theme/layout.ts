@@ -26,17 +26,35 @@ export const READING_WIDTH = 680;
  */
 export const computeLayout = (available: number) => {
   const sizeClass: SizeClass =
-    available >= EXPANDED ? 'expanded' : available >= MEDIUM ? 'medium' : 'compact';
+    available >= EXPANDED
+      ? 'expanded'
+      : available >= MEDIUM
+      ? 'medium'
+      : 'compact';
   const compact = sizeClass === 'compact';
 
-  const gutter = compact ? spacing.lg : sizeClass === 'medium' ? spacing.xl : spacing.xxl;
+  const gutter = compact
+    ? spacing.lg
+    : sizeClass === 'medium'
+    ? spacing.xl
+    : spacing.xxl;
   const gap = compact ? spacing.md : spacing.lg;
   const columns = compact ? 1 : sizeClass === 'medium' ? 2 : 3;
 
   const listWidth = Math.min(available, MAX_LIST_WIDTH);
-  const itemWidth = Math.floor((listWidth - gutter * 2 - gap * (columns - 1)) / columns);
+  const itemWidth = Math.floor(
+    (listWidth - gutter * 2 - gap * (columns - 1)) / columns,
+  );
 
-  return {sizeClass, isCompact: compact, gutter, gap, columns, listWidth, itemWidth};
+  return {
+    sizeClass,
+    isCompact: compact,
+    gutter,
+    gap,
+    columns,
+    listWidth,
+    itemWidth,
+  };
 };
 
 /** Window-level layout (window width minus safe-area insets). */

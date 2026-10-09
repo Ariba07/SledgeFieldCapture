@@ -1,6 +1,12 @@
 import React, {useEffect, useRef} from 'react';
 import {Animated, Easing, Text, View} from 'react-native';
-import {CircleAlert, Clock, CloudCheck, LucideIcon, RefreshCw} from 'lucide-react-native';
+import {
+  CircleAlert,
+  Clock,
+  CloudCheck,
+  LucideIcon,
+  RefreshCw,
+} from 'lucide-react-native';
 import {SyncStatus} from '../types';
 import {useTheme} from '../theme';
 import {ICON_STROKE} from './ui';
@@ -43,7 +49,10 @@ export const SyncBadge: React.FC<Props> = ({status, retryCount = 0}) => {
     return () => loop.stop();
   }, [status, spin]);
 
-  const rotate = spin.interpolate({inputRange: [0, 1], outputRange: ['0deg', '360deg']});
+  const rotate = spin.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
   const text = status === 'pending' && retryCount > 0 ? 'Retrying' : label;
 
   return (

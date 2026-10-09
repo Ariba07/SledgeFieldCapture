@@ -25,7 +25,9 @@ export const NewCaptureScreen: React.FC<RootStackScreenProps<'NewCapture'>> = ({
     } catch (err) {
       Alert.alert(
         "Couldn't save capture",
-        err instanceof Error ? err.message : 'Something went wrong. Please try again.',
+        err instanceof Error
+          ? err.message
+          : 'Something went wrong. Please try again.',
       );
     }
   };

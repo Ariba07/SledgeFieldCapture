@@ -14,14 +14,20 @@ export const formatTimestamp = (iso: string): string => {
   const now = new Date();
   const yesterday = new Date(now);
   yesterday.setDate(now.getDate() - 1);
-  const time = d.toLocaleTimeString(undefined, {hour: '2-digit', minute: '2-digit'});
+  const time = d.toLocaleTimeString(undefined, {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
   if (sameDay(d, now)) {
     return `Today, ${time}`;
   }
   if (sameDay(d, yesterday)) {
     return `Yesterday, ${time}`;
   }
-  const date = d.toLocaleDateString(undefined, {day: 'numeric', month: 'short'});
+  const date = d.toLocaleDateString(undefined, {
+    day: 'numeric',
+    month: 'short',
+  });
   return `${date}, ${time}`;
 };
 

@@ -36,7 +36,8 @@ export interface CaptureTransport {
 
 let simulateServerErrors = false;
 
-const failure = () => new SyncError('Server returned 503 – service unavailable');
+const failure = () =>
+  new SyncError('Server returned 503 – service unavailable');
 
 export const SyncService: CaptureTransport & {
   setSimulateServerErrors(on: boolean): void;

@@ -42,7 +42,13 @@ class ControlledTransport implements CaptureTransport {
   }
   uploadCapture(capture: FieldCapture) {
     return new Promise<void>((resolve, reject) => {
-      this.calls.push({id: capture.id, kind: 'record', payload: capture, resolve, reject});
+      this.calls.push({
+        id: capture.id,
+        kind: 'record',
+        payload: capture,
+        resolve,
+        reject,
+      });
     });
   }
   get inFlight() {
@@ -56,7 +62,10 @@ class ControlledTransport implements CaptureTransport {
   }
 }
 
-const makeCapture = (id: string, syncStatus: SyncStatus = 'pending'): FieldCapture => ({
+const makeCapture = (
+  id: string,
+  syncStatus: SyncStatus = 'pending',
+): FieldCapture => ({
   id,
   captureType: 'issue',
   projectName: 'Tower A',
@@ -97,7 +106,10 @@ describe('SyncEngine', () => {
     jest.spyOn(Math, 'random').mockReturnValue(0); // no jitter
     store = new MemoryStore();
     transport = new ControlledTransport();
-    engine = new SyncEngine(store, transport, {maxAttempts: 3, baseDelayMs: 1000});
+    engine = new SyncEngine(store, transport, {
+      maxAttempts: 3,
+      baseDelayMs: 1000,
+    });
     await engine.start();
   });
 
@@ -255,7 +267,10 @@ describe('SyncEngine', () => {
 
   it('resets captures stuck in syncing after an app restart', async () => {
     const restartedStore = new MemoryStore();
-    restartedStore.data = [makeCapture('a', 'syncing'), makeCapture('b', 'synced')];
+    restartedStore.data = [
+      makeCapture('a', 'syncing'),
+      makeCapture('b', 'synced'),
+    ];
     const restarted = new SyncEngine(restartedStore, transport);
 
     await restarted.start();
@@ -280,7 +295,9 @@ describe('SyncEngine', () => {
   });
 
   it('reports a failed write to device storage and clears it once a write succeeds', async () => {
-    const saveAll = jest.spyOn(store, 'saveAll').mockRejectedValueOnce(new Error('Disk full'));
+    const saveAll = jest
+      .spyOn(store, 'saveAll')
+      .mockRejectedValueOnce(new Error('Disk full'));
     await engine.add(makeCapture('a'));
 
     expect(engine.getSnapshot().storageError).toBe('Disk full');
@@ -303,18 +320,24 @@ describe('SyncEngine', () => {
       await engine.add(withMedia());
       await settle();
 
-      expect(transport.calls.map(c => [c.kind, c.id])).toEqual([['file', 'p1']]);
+      expect(transport.calls.map(c => [c.kind, c.id])).toEqual([
+        ['file', 'p1'],
+      ]);
       transport.calls[0].onProgress!(0.5);
       expect(engine.getSnapshot().progress.a).toBe(0.38); // 150 of 400 bytes
 
       transport.succeed();
       await settle();
       expect(engine.getSnapshot().progress.a).toBe(0.75);
-      expect(transport.calls.map(c => [c.kind, c.id])).toEqual([['file', 'p2']]);
+      expect(transport.calls.map(c => [c.kind, c.id])).toEqual([
+        ['file', 'p2'],
+      ]);
 
       transport.succeed();
       await settle();
-      expect(transport.calls.map(c => [c.kind, c.id])).toEqual([['record', 'a']]);
+      expect(transport.calls.map(c => [c.kind, c.id])).toEqual([
+        ['record', 'a'],
+      ]);
 
       transport.succeed();
       await settle();
@@ -324,7 +347,9 @@ describe('SyncEngine', () => {
         'https://cdn.test/p1',
         'https://cdn.test/p2',
       ]);
-      expect(store.data[0].attachments![0].remoteUrl).toBe('https://cdn.test/p1');
+      expect(store.data[0].attachments![0].remoteUrl).toBe(
+        'https://cdn.test/p1',
+      );
       expect(engine.getSnapshot().progress).toEqual({});
     });
 
@@ -343,7 +368,9 @@ describe('SyncEngine', () => {
 
       jest.advanceTimersByTime(1000);
       await settle();
-      expect(transport.calls.map(c => [c.kind, c.id])).toEqual([['file', 'p2']]);
+      expect(transport.calls.map(c => [c.kind, c.id])).toEqual([
+        ['file', 'p2'],
+      ]);
     });
   });
 
@@ -394,7 +421,9 @@ describe('SyncEngine', () => {
       transport.succeed(); // server now has version 1
       await settle();
       expect(engine.getSnapshot().captures[0].syncedVersion).toBe(1);
-      expect(transport.calls.map(c => c.payload!.notes)).toEqual(['changed mid-upload']);
+      expect(transport.calls.map(c => c.payload!.notes)).toEqual([
+        'changed mid-upload',
+      ]);
 
       transport.succeed();
       await settle();
@@ -421,13 +450,18 @@ describe('SyncEngine', () => {
 
     it('keeps upload progress for files that finished while the form was open', async () => {
       engine.setOnline(true);
-      await engine.add({...makeCapture('a'), attachments: [makeAttachment('p1', 100)]});
+      await engine.add({
+        ...makeCapture('a'),
+        attachments: [makeAttachment('p1', 100)],
+      });
       await settle();
       const staleFormCopy = [makeAttachment('p1', 100)]; // form opened before upload finished
       transport.succeed(); // p1 uploaded
       await settle();
 
-      await engine.update('a', {attachments: [...staleFormCopy, makeAttachment('p2', 100)]});
+      await engine.update('a', {
+        attachments: [...staleFormCopy, makeAttachment('p2', 100)],
+      });
       const files = engine.getSnapshot().captures[0].attachments!;
       expect(files[0].remoteUrl).toBe('https://cdn.test/p1');
       expect(files[1].remoteUrl).toBeUndefined();
@@ -435,7 +469,11 @@ describe('SyncEngine', () => {
 
     it('adds a photo to a synced capture that has a video, uploading only the new file', async () => {
       engine.setOnline(true);
-      const video = {...makeAttachment('v1', 5000), kind: 'video' as const, mimeType: 'video/mp4'};
+      const video = {
+        ...makeAttachment('v1', 5000),
+        kind: 'video' as const,
+        mimeType: 'video/mp4',
+      };
       await engine.add({...makeCapture('a'), attachments: [video]});
       await settle();
       transport.succeed(); // video
@@ -445,14 +483,23 @@ describe('SyncEngine', () => {
       expect(statusOf(engine, 'a')).toBe('synced');
 
       const current = engine.getSnapshot().captures[0];
-      await engine.update('a', {attachments: [...current.attachments!, makeAttachment('p1', 100)]});
+      await engine.update('a', {
+        attachments: [...current.attachments!, makeAttachment('p1', 100)],
+      });
       await settle();
 
-      expect(transport.calls.map(c => [c.kind, c.id])).toEqual([['file', 'p1']]);
+      expect(transport.calls.map(c => [c.kind, c.id])).toEqual([
+        ['file', 'p1'],
+      ]);
       transport.succeed();
       await settle();
-      expect(transport.calls.map(c => [c.kind, c.id])).toEqual([['record', 'a']]);
-      expect(transport.calls[0].payload!.attachments!.map(x => x.id)).toEqual(['v1', 'p1']);
+      expect(transport.calls.map(c => [c.kind, c.id])).toEqual([
+        ['record', 'a'],
+      ]);
+      expect(transport.calls[0].payload!.attachments!.map(x => x.id)).toEqual([
+        'v1',
+        'p1',
+      ]);
       transport.succeed();
       await settle();
       expect(statusOf(engine, 'a')).toBe('synced');

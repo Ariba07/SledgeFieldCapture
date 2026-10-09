@@ -14,7 +14,10 @@ import {Attachment} from '../types';
 import {attachmentUri} from '../services/MediaService';
 import {formatBytes, formatDuration} from '../utils/helpers';
 import {useTheme} from '../theme';
-import {useMediaCarouselStyles, GAP} from '../styles/components/MediaCarousel.styles';
+import {
+  useMediaCarouselStyles,
+  GAP,
+} from '../styles/components/MediaCarousel.styles';
 
 interface Props {
   attachments: Attachment[];
@@ -32,7 +35,11 @@ export const MediaCarousel: React.FC<Props> = ({attachments, onOpen}) => {
   const itemWidth = multiple ? Math.round(width * 0.86) : width;
   const single = attachments[0];
   const singleRatio =
-    single?.width && single?.height ? single.width / single.height : single?.kind === 'video' ? 16 / 9 : 4 / 3;
+    single?.width && single?.height
+      ? single.width / single.height
+      : single?.kind === 'video'
+      ? 16 / 9
+      : 4 / 3;
   const itemHeight = multiple
     ? Math.min(Math.round((itemWidth * 3) / 4), MAX_HEIGHT)
     : Math.min(Math.round(itemWidth / singleRatio), MAX_HEIGHT);
@@ -66,9 +73,14 @@ export const MediaCarousel: React.FC<Props> = ({attachments, onOpen}) => {
       ) : null}
 
       {multiple ? (
-        <View style={styles.dots} accessibilityLabel={`Item ${active + 1} of ${attachments.length}`}>
+        <View
+          style={styles.dots}
+          accessibilityLabel={`Item ${active + 1} of ${attachments.length}`}>
           {attachments.map((a, i) => (
-            <View key={a.id} style={[styles.dot, i === active && styles.dotActive]} />
+            <View
+              key={a.id}
+              style={[styles.dot, i === active && styles.dotActive]}
+            />
           ))}
         </View>
       ) : null}
@@ -97,14 +109,23 @@ const MediaTile: React.FC<{
     <View style={{width}}>
       {a.kind === 'video' ? (
         <View style={[styles.frame, {height}]}>
-          <Video source={{uri}} style={styles.fill} controls paused resizeMode="contain" />
+          <Video
+            source={{uri}}
+            style={styles.fill}
+            controls
+            paused
+            resizeMode="contain"
+          />
           {/* Tapping a video drives its controls, so full screen gets its own button. */}
           <Pressable
             onPress={onOpen}
             hitSlop={8}
             accessibilityRole="button"
             accessibilityLabel="View video full screen"
-            style={({pressed}) => [styles.expand, pressed && styles.expandPressed]}>
+            style={({pressed}) => [
+              styles.expand,
+              pressed && styles.expandPressed,
+            ]}>
             <Maximize2 size={16} color="#FFFFFF" strokeWidth={2.25} />
           </Pressable>
         </View>
@@ -113,7 +134,11 @@ const MediaTile: React.FC<{
           onPress={onOpen}
           accessibilityRole="imagebutton"
           accessibilityLabel="View photo full screen"
-          style={({pressed}) => [styles.frame, {height}, pressed && styles.pressed]}>
+          style={({pressed}) => [
+            styles.frame,
+            {height},
+            pressed && styles.pressed,
+          ]}>
           <Image source={{uri}} style={styles.fill} resizeMode="cover" />
         </Pressable>
       )}
@@ -122,7 +147,10 @@ const MediaTile: React.FC<{
           {meta}
         </Text>
         <Text
-          style={[styles.metaText, {color: a.remoteUrl ? colors.status.synced : colors.textTertiary}]}>
+          style={[
+            styles.metaText,
+            {color: a.remoteUrl ? colors.status.synced : colors.textTertiary},
+          ]}>
           {a.remoteUrl ? 'Uploaded' : 'Not uploaded'}
         </Text>
       </View>

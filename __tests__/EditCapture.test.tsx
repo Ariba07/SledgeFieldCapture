@@ -24,7 +24,14 @@ const seed: FieldCapture = {
   syncedAt: '2026-10-09T10:01:00.000Z',
   retryCount: 0,
   attachments: [
-    {id: 'v1', kind: 'video', fileName: 'v1.mp4', mimeType: 'video/mp4', sizeBytes: 5000, remoteUrl: 'https://cdn/v1'},
+    {
+      id: 'v1',
+      kind: 'video',
+      fileName: 'v1.mp4',
+      mimeType: 'video/mp4',
+      sizeBytes: 5000,
+      remoteUrl: 'https://cdn/v1',
+    },
   ],
 };
 
@@ -42,13 +49,20 @@ const flush = async () => {
 
 it('saving an edit updates the existing entry in place', async () => {
   await AsyncStorage.setItem('@sledge_captures', JSON.stringify([seed]));
-  const navigation = {goBack: jest.fn(), navigate: jest.fn(), setOptions: jest.fn()};
+  const navigation = {
+    goBack: jest.fn(),
+    navigate: jest.fn(),
+    setOptions: jest.fn(),
+  };
 
   let root!: ReactTestRenderer.ReactTestRenderer;
   await act(async () => {
     root = ReactTestRenderer.create(
       <SafeAreaProvider
-        initialMetrics={{frame: {x: 0, y: 0, width: 390, height: 844}, insets: {top: 0, left: 0, right: 0, bottom: 0}}}>
+        initialMetrics={{
+          frame: {x: 0, y: 0, width: 390, height: 844},
+          insets: {top: 0, left: 0, right: 0, bottom: 0},
+        }}>
         <SyncProvider>
           <Probe />
         </SyncProvider>
@@ -62,12 +76,21 @@ it('saving an edit updates the existing entry in place', async () => {
   await act(async () => {
     root.update(
       <SafeAreaProvider
-        initialMetrics={{frame: {x: 0, y: 0, width: 390, height: 844}, insets: {top: 0, left: 0, right: 0, bottom: 0}}}>
+        initialMetrics={{
+          frame: {x: 0, y: 0, width: 390, height: 844},
+          insets: {top: 0, left: 0, right: 0, bottom: 0},
+        }}>
         <SyncProvider>
           <Probe />
           <EditCaptureScreen
             navigation={navigation as any}
-            route={{key: 'edit', name: 'EditCapture', params: {captureId: 'cap-1'}} as any}
+            route={
+              {
+                key: 'edit',
+                name: 'EditCapture',
+                params: {captureId: 'cap-1'},
+              } as any
+            }
           />
         </SyncProvider>
       </SafeAreaProvider>,
@@ -75,9 +98,14 @@ it('saving an edit updates the existing entry in place', async () => {
   });
   await flush();
 
-  const notes = root.root.findByProps({accessibilityLabel: 'Notes', multiline: true});
+  const notes = root.root.findByProps({
+    accessibilityLabel: 'Notes',
+    multiline: true,
+  });
   await act(async () => notes.props.onChangeText('Edited note'));
-  const save = root.root.findAll(n => n.props.accessibilityLabel === 'Save changes' && n.props.onPress)[0];
+  const save = root.root.findAll(
+    n => n.props.accessibilityLabel === 'Save changes' && n.props.onPress,
+  )[0];
   await act(async () => save.props.onPress());
   await flush();
 
@@ -90,7 +118,9 @@ it('saving an edit updates the existing entry in place', async () => {
   expect(edited.updatedAt).toBeDefined();
   expect(edited.attachments!.map(a => a.id)).toEqual(['v1']);
 
-  const stored = JSON.parse((await AsyncStorage.getItem('@sledge_captures'))!) as FieldCapture[];
+  const stored = JSON.parse(
+    (await AsyncStorage.getItem('@sledge_captures'))!,
+  ) as FieldCapture[];
   expect(stored).toHaveLength(1);
   expect(stored[0].notes).toBe('Edited note');
 });

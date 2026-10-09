@@ -14,14 +14,20 @@ import {useHomeScreenStyles} from '../styles/screens/HomeScreen.styles';
 
 type Filter = 'all' | 'unsynced' | 'synced';
 
-export const HomeScreen: React.FC<MainTabScreenProps<'Captures'>> = ({navigation}) => {
+export const HomeScreen: React.FC<MainTabScreenProps<'Captures'>> = ({
+  navigation,
+}) => {
   const styles = useHomeScreenStyles();
   const {colors} = useTheme();
-  const {captures, progress, isOnline, storageError, retryCapture} = useSyncContext();
+  const {captures, progress, isOnline, storageError, retryCapture} =
+    useSyncContext();
   const {isCompact, gutter, insets} = useLayout();
   const [filter, setFilter] = useState<Filter>('all');
 
-  const unsynced = useMemo(() => captures.filter(c => c.syncStatus !== 'synced'), [captures]);
+  const unsynced = useMemo(
+    () => captures.filter(c => c.syncStatus !== 'synced'),
+    [captures],
+  );
   const syncedCount = captures.length - unsynced.length;
   const visible =
     filter === 'all'
@@ -42,10 +48,16 @@ export const HomeScreen: React.FC<MainTabScreenProps<'Captures'>> = ({navigation
           <View
             style={[
               styles.dot,
-              {backgroundColor: isOnline ? colors.status.synced : colors.textTertiary},
+              {
+                backgroundColor: isOnline
+                  ? colors.status.synced
+                  : colors.textTertiary,
+              },
             ]}
           />
-          <Text style={styles.connectionText}>{isOnline ? 'Online' : 'Offline'}</Text>
+          <Text style={styles.connectionText}>
+            {isOnline ? 'Online' : 'Offline'}
+          </Text>
         </View>
       </View>
 
@@ -54,15 +66,15 @@ export const HomeScreen: React.FC<MainTabScreenProps<'Captures'>> = ({navigation
 
       {captures.length > 0 ? (
         <View style={!isCompact && styles.filterWide}>
-        <SegmentedControl<Filter>
-          value={filter}
-          onChange={setFilter}
-          segments={[
-            {value: 'all', label: `All ${captures.length}`},
-            {value: 'unsynced', label: `Not synced ${unsynced.length}`},
-            {value: 'synced', label: `Synced ${syncedCount}`},
-          ]}
-        />
+          <SegmentedControl<Filter>
+            value={filter}
+            onChange={setFilter}
+            segments={[
+              {value: 'all', label: `All ${captures.length}`},
+              {value: 'unsynced', label: `Not synced ${unsynced.length}`},
+              {value: 'synced', label: `Synced ${syncedCount}`},
+            ]}
+          />
         </View>
       ) : null}
     </View>
@@ -72,18 +84,29 @@ export const HomeScreen: React.FC<MainTabScreenProps<'Captures'>> = ({navigation
     captures.length === 0 ? (
       <View style={styles.empty}>
         <View style={styles.emptyIcon}>
-          <ClipboardList size={28} color={colors.primary} strokeWidth={ICON_STROKE} />
+          <ClipboardList
+            size={28}
+            color={colors.primary}
+            strokeWidth={ICON_STROKE}
+          />
         </View>
         <Text style={styles.emptyTitle}>No captures yet</Text>
         <Text style={styles.emptyBody}>
-          Record daily logs, RFIs, punch items and issues on site — with or without
-          signal.
+          Record daily logs, RFIs, punch items and issues on site — with or
+          without signal.
         </Text>
-        <Button title="New capture" icon={Plus} onPress={openNew} style={styles.emptyButton} />
+        <Button
+          title="New capture"
+          icon={Plus}
+          onPress={openNew}
+          style={styles.emptyButton}
+        />
       </View>
     ) : (
       <Text style={styles.filterEmpty}>
-        {filter === 'unsynced' ? 'Everything is synced.' : 'Nothing has synced yet.'}
+        {filter === 'unsynced'
+          ? 'Everything is synced.'
+          : 'Nothing has synced yet.'}
       </Text>
     );
 

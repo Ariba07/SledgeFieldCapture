@@ -34,9 +34,19 @@ import {
   PRIORITY_LABELS,
   Priority,
 } from '../types';
-import {MAX_ATTACHMENTS, MediaService, MediaSource} from '../services/MediaService';
+import {
+  MAX_ATTACHMENTS,
+  MediaService,
+  MediaSource,
+} from '../services/MediaService';
 import {AttachmentThumb} from './AttachmentThumb';
-import {Button, CAPTURE_TYPE_ICONS, ICON_STROKE, IconButton, SegmentedControl} from './ui';
+import {
+  Button,
+  CAPTURE_TYPE_ICONS,
+  ICON_STROKE,
+  IconButton,
+  SegmentedControl,
+} from './ui';
 import {useTheme} from '../theme';
 import {useCaptureFormStyles} from '../styles/components/CaptureForm.styles';
 
@@ -47,7 +57,13 @@ interface Props {
   onCancel: () => void;
 }
 
-const CAPTURE_TYPES: CaptureType[] = ['daily_log', 'rfi', 'punchlist', 'issue', 'inspection'];
+const CAPTURE_TYPES: CaptureType[] = [
+  'daily_log',
+  'rfi',
+  'punchlist',
+  'issue',
+  'inspection',
+];
 const PRIORITIES: Priority[] = ['low', 'medium', 'high'];
 
 const WEATHER: {label: string; icon: LucideIcon}[] = [
@@ -59,11 +75,12 @@ const WEATHER: {label: string; icon: LucideIcon}[] = [
   {label: 'Cold', icon: Snowflake},
 ];
 
-const MEDIA_BUTTONS: {source: MediaSource; label: string; icon: LucideIcon}[] = [
-  {source: 'camera_photo', label: 'Photo', icon: Camera},
-  {source: 'camera_video', label: 'Video', icon: Video},
-  {source: 'library', label: 'Library', icon: Images},
-];
+const MEDIA_BUTTONS: {source: MediaSource; label: string; icon: LucideIcon}[] =
+  [
+    {source: 'camera_photo', label: 'Photo', icon: Camera},
+    {source: 'camera_video', label: 'Video', icon: Video},
+    {source: 'library', label: 'Library', icon: Images},
+  ];
 
 const NOTES_PLACEHOLDER: Record<CaptureType, string> = {
   daily_log: 'Work completed, deliveries, visitors, delays…',
@@ -77,16 +94,22 @@ export const CaptureForm: React.FC<Props> = ({initial, onSave, onCancel}) => {
   const styles = useCaptureFormStyles();
   const {colors} = useTheme();
   const editing = !!initial;
-  const [captureType, setCaptureType] = useState<CaptureType>(initial?.captureType ?? 'daily_log');
+  const [captureType, setCaptureType] = useState<CaptureType>(
+    initial?.captureType ?? 'daily_log',
+  );
   const [projectName, setProjectName] = useState(initial?.projectName ?? '');
   const [location, setLocation] = useState(initial?.location ?? '');
   const [notes, setNotes] = useState(initial?.notes ?? '');
-  const [priority, setPriority] = useState<Priority>(initial?.priority ?? 'medium');
+  const [priority, setPriority] = useState<Priority>(
+    initial?.priority ?? 'medium',
+  );
   const [workerCount, setWorkerCount] = useState(
     initial?.workerCount != null ? String(initial.workerCount) : '',
   );
   const [weather, setWeather] = useState(initial?.weather ?? '');
-  const [attachments, setAttachments] = useState<Attachment[]>(initial?.attachments ?? []);
+  const [attachments, setAttachments] = useState<Attachment[]>(
+    initial?.attachments ?? [],
+  );
   const [importing, setImporting] = useState(false);
   const [showErrors, setShowErrors] = useState(false);
 
@@ -96,11 +119,15 @@ export const CaptureForm: React.FC<Props> = ({initial, onSave, onCancel}) => {
   const savedRef = useRef(false);
   const attachmentsRef = useRef(attachments);
   attachmentsRef.current = attachments;
-  const originalIds = useRef(new Set((initial?.attachments ?? []).map(a => a.id)));
+  const originalIds = useRef(
+    new Set((initial?.attachments ?? []).map(a => a.id)),
+  );
   useEffect(
     () => () => {
       if (!savedRef.current) {
-        MediaService.remove(attachmentsRef.current.filter(a => !originalIds.current.has(a.id)));
+        MediaService.remove(
+          attachmentsRef.current.filter(a => !originalIds.current.has(a.id)),
+        );
       }
     },
     [],
@@ -109,7 +136,10 @@ export const CaptureForm: React.FC<Props> = ({initial, onSave, onCancel}) => {
   const addMedia = async (source: MediaSource) => {
     const remaining = MAX_ATTACHMENTS - attachments.length;
     if (remaining <= 0) {
-      Alert.alert('Limit reached', `You can attach up to ${MAX_ATTACHMENTS} photos or videos.`);
+      Alert.alert(
+        'Limit reached',
+        `You can attach up to ${MAX_ATTACHMENTS} photos or videos.`,
+      );
       return;
     }
     setImporting(true);
@@ -117,7 +147,10 @@ export const CaptureForm: React.FC<Props> = ({initial, onSave, onCancel}) => {
       const added = await MediaService.pick(source, remaining);
       setAttachments(prev => [...prev, ...added]);
     } catch (err) {
-      Alert.alert("Couldn't add media", err instanceof Error ? err.message : 'Something went wrong.');
+      Alert.alert(
+        "Couldn't add media",
+        err instanceof Error ? err.message : 'Something went wrong.',
+      );
     } finally {
       setImporting(false);
     }
@@ -131,8 +164,10 @@ export const CaptureForm: React.FC<Props> = ({initial, onSave, onCancel}) => {
     }
   };
 
-  const projectError = showErrors && !projectName.trim() ? 'Enter the project name.' : undefined;
-  const locationError = showErrors && !location.trim() ? 'Enter where on site this is.' : undefined;
+  const projectError =
+    showErrors && !projectName.trim() ? 'Enter the project name.' : undefined;
+  const locationError =
+    showErrors && !location.trim() ? 'Enter where on site this is.' : undefined;
 
   const handleSave = () => {
     if (!projectName.trim() || !location.trim()) {
@@ -147,7 +182,8 @@ export const CaptureForm: React.FC<Props> = ({initial, onSave, onCancel}) => {
       location: location.trim(),
       notes: notes.trim(),
       priority,
-      workerCount: isDailyLog && workerCount ? parseInt(workerCount, 10) : undefined,
+      workerCount:
+        isDailyLog && workerCount ? parseInt(workerCount, 10) : undefined,
       weather: isDailyLog && weather ? weather : undefined,
       attachments,
     });
@@ -156,10 +192,16 @@ export const CaptureForm: React.FC<Props> = ({initial, onSave, onCancel}) => {
   return (
     <SafeAreaView
       style={styles.safe}
-      edges={Platform.OS === 'ios' ? ['bottom', 'left', 'right'] : ['top', 'bottom', 'left', 'right']}>
+      edges={
+        Platform.OS === 'ios'
+          ? ['bottom', 'left', 'right']
+          : ['top', 'bottom', 'left', 'right']
+      }>
       <View style={styles.navBar}>
         <IconButton icon={X} onPress={onCancel} accessibilityLabel="Cancel" />
-        <Text style={styles.navTitle}>{editing ? 'Edit capture' : 'New capture'}</Text>
+        <Text style={styles.navTitle}>
+          {editing ? 'Edit capture' : 'New capture'}
+        </Text>
         <View style={styles.navSpacer} />
       </View>
 
@@ -191,7 +233,11 @@ export const CaptureForm: React.FC<Props> = ({initial, onSave, onCancel}) => {
                     color={selected ? colors.onPrimary : colors.textSecondary}
                     strokeWidth={ICON_STROKE}
                   />
-                  <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
+                  <Text
+                    style={[
+                      styles.chipText,
+                      selected && styles.chipTextSelected,
+                    ]}>
                     {CAPTURE_TYPE_LABELS[t]}
                   </Text>
                 </Pressable>
@@ -250,10 +296,16 @@ export const CaptureForm: React.FC<Props> = ({initial, onSave, onCancel}) => {
                       style={[styles.chip, selected && styles.chipSelected]}>
                       <w.icon
                         size={16}
-                        color={selected ? colors.onPrimary : colors.textSecondary}
+                        color={
+                          selected ? colors.onPrimary : colors.textSecondary
+                        }
                         strokeWidth={ICON_STROKE}
                       />
-                      <Text style={[styles.chipText, selected && styles.chipTextSelected]}>
+                      <Text
+                        style={[
+                          styles.chipText,
+                          selected && styles.chipTextSelected,
+                        ]}>
                         {w.label}
                       </Text>
                     </Pressable>
@@ -274,7 +326,9 @@ export const CaptureForm: React.FC<Props> = ({initial, onSave, onCancel}) => {
           />
 
           <FieldLabel
-            text={`Photos & videos${attachments.length ? ` · ${attachments.length}` : ''}`}
+            text={`Photos & videos${
+              attachments.length ? ` · ${attachments.length}` : ''
+            }`}
           />
           <View style={styles.mediaButtons}>
             {MEDIA_BUTTONS.map(b => (
@@ -296,7 +350,12 @@ export const CaptureForm: React.FC<Props> = ({initial, onSave, onCancel}) => {
               contentContainerStyle={styles.thumbRow}
               style={styles.bleed}>
               {attachments.map(a => (
-                <AttachmentThumb key={a.id} attachment={a} size={80} onRemove={removeMedia} />
+                <AttachmentThumb
+                  key={a.id}
+                  attachment={a}
+                  size={80}
+                  onRemove={removeMedia}
+                />
               ))}
               {importing ? (
                 <View style={styles.importingTile}>
@@ -307,7 +366,8 @@ export const CaptureForm: React.FC<Props> = ({initial, onSave, onCancel}) => {
           ) : null}
 
           <Text style={styles.footnote}>
-            Saved to this device first, then uploaded automatically when you’re online.
+            Saved to this device first, then uploaded automatically when you’re
+            online.
           </Text>
         </ScrollView>
 
@@ -325,7 +385,10 @@ export const CaptureForm: React.FC<Props> = ({initial, onSave, onCancel}) => {
   );
 };
 
-const FieldLabel: React.FC<{text: string; first?: boolean}> = ({text, first}) => {
+const FieldLabel: React.FC<{text: string; first?: boolean}> = ({
+  text,
+  first,
+}) => {
   const styles = useCaptureFormStyles();
   return <Text style={[styles.label, first && styles.labelFirst]}>{text}</Text>;
 };

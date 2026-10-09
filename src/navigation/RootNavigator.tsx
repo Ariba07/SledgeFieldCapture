@@ -47,7 +47,11 @@ export const RootNavigator: React.FC = () => {
           headerShadowVisible: false,
           contentStyle: {backgroundColor: colors.background},
         }}>
-        <Stack.Screen name="MainTabs" component={MainTabs} options={{headerShown: false}} />
+        <Stack.Screen
+          name="MainTabs"
+          component={MainTabs}
+          options={{headerShown: false}}
+        />
         <Stack.Screen
           name="CaptureDetail"
           component={CaptureDetailScreen}

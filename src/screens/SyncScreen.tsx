@@ -20,7 +20,9 @@ import {useSyncScreenStyles} from '../styles/screens/SyncScreen.styles';
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
 
-export const SyncScreen: React.FC<MainTabScreenProps<'Sync'>> = ({navigation}) => {
+export const SyncScreen: React.FC<MainTabScreenProps<'Sync'>> = ({
+  navigation,
+}) => {
   const styles = useSyncScreenStyles();
   const {colors} = useTheme();
   const {
@@ -32,7 +34,9 @@ export const SyncScreen: React.FC<MainTabScreenProps<'Sync'>> = ({navigation}) =
     retryCapture,
     flushPendingCaptures,
   } = useSyncContext();
-  const [simulateErrors, setSimulateErrors] = useState(SyncService.getSimulateServerErrors);
+  const [simulateErrors, setSimulateErrors] = useState(
+    SyncService.getSimulateServerErrors,
+  );
 
   const queue = captures.filter(c => c.syncStatus !== 'synced');
   const errorCount = queue.filter(c => c.syncStatus === 'error').length;
@@ -43,14 +47,22 @@ export const SyncScreen: React.FC<MainTabScreenProps<'Sync'>> = ({navigation}) =
     setSimulateErrors(on);
   };
 
-  const status: {icon: LucideIcon; color: string; title: string; detail: string} = !isOnline
+  const status: {
+    icon: LucideIcon;
+    color: string;
+    title: string;
+    detail: string;
+  } = !isOnline
     ? {
         icon: CloudOff,
         color: colors.textSecondary,
         title: 'Offline',
         detail:
           queue.length > 0
-            ? `${plural(queue.length, 'capture')} will upload automatically when you reconnect.`
+            ? `${plural(
+                queue.length,
+                'capture',
+              )} will upload automatically when you reconnect.`
             : 'Nothing waiting. New captures will be saved on this device.',
       }
     : isSyncing
@@ -65,7 +77,8 @@ export const SyncScreen: React.FC<MainTabScreenProps<'Sync'>> = ({navigation}) =
         icon: CircleAlert,
         color: colors.status.error,
         title: `${errorCount} failed`,
-        detail: 'Stopped after 3 attempts. Retry below, or they will retry when you reconnect.',
+        detail:
+          'Stopped after 3 attempts. Retry below, or they will retry when you reconnect.',
       }
     : queue.length > 0
     ? {
@@ -92,7 +105,11 @@ export const SyncScreen: React.FC<MainTabScreenProps<'Sync'>> = ({navigation}) =
 
       <View style={styles.statusCard}>
         <View style={styles.statusRow}>
-          <StatusIcon size={24} color={status.color} strokeWidth={ICON_STROKE} />
+          <StatusIcon
+            size={24}
+            color={status.color}
+            strokeWidth={ICON_STROKE}
+          />
           <View style={styles.statusText}>
             <Text style={styles.statusTitle}>{status.title}</Text>
             <Text style={styles.statusDetail}>{status.detail}</Text>
@@ -109,7 +126,9 @@ export const SyncScreen: React.FC<MainTabScreenProps<'Sync'>> = ({navigation}) =
         ) : null}
       </View>
 
-      {queue.length > 0 ? <SectionHeader title={`Queue · ${queue.length}`} /> : null}
+      {queue.length > 0 ? (
+        <SectionHeader title={`Queue · ${queue.length}`} />
+      ) : null}
     </View>
   );
 

@@ -12,22 +12,33 @@ interface Props {
   onRemove?: (attachment: Attachment) => void;
 }
 
-export const AttachmentThumb: React.FC<Props> = ({attachment, size, onRemove}) => {
+export const AttachmentThumb: React.FC<Props> = ({
+  attachment,
+  size,
+  onRemove,
+}) => {
   const styles = useAttachmentThumbStyles();
   const showMeta = size >= 56;
 
   return (
     <View style={[styles.thumb, {width: size, height: size}]}>
       {attachment.kind === 'photo' ? (
-        <Image source={{uri: attachmentUri(attachment)}} style={StyleSheet.absoluteFill} />
+        <Image
+          source={{uri: attachmentUri(attachment)}}
+          style={StyleSheet.absoluteFill}
+        />
       ) : (
         <View style={[StyleSheet.absoluteFill, styles.videoTile]}>
           <Play size={size * 0.28} color="#FFFFFF" fill="#FFFFFF" />
         </View>
       )}
 
-      {attachment.kind === 'video' && attachment.durationSec != null && showMeta ? (
-        <Text style={styles.duration}>{formatDuration(attachment.durationSec)}</Text>
+      {attachment.kind === 'video' &&
+      attachment.durationSec != null &&
+      showMeta ? (
+        <Text style={styles.duration}>
+          {formatDuration(attachment.durationSec)}
+        </Text>
       ) : null}
 
       {attachment.remoteUrl && showMeta ? (

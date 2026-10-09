@@ -83,8 +83,12 @@ export const Button: React.FC<ButtonProps> = ({
         <ActivityIndicator size="small" color={fg} />
       ) : (
         <>
-          {Icon ? <Icon size={small ? 16 : 18} color={fg} strokeWidth={ICON_STROKE} /> : null}
-          <Text style={[small ? styles.labelSmall : styles.label, {color: fg}]}>{title}</Text>
+          {Icon ? (
+            <Icon size={small ? 16 : 18} color={fg} strokeWidth={ICON_STROKE} />
+          ) : null}
+          <Text style={[small ? styles.labelSmall : styles.label, {color: fg}]}>
+            {title}
+          </Text>
         </>
       )}
     </Pressable>
@@ -105,30 +109,37 @@ export const IconButton: React.FC<{
       hitSlop={8}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
-      style={({pressed}) => [styles.iconButton, pressed && styles.iconButtonPressed]}>
+      style={({pressed}) => [
+        styles.iconButton,
+        pressed && styles.iconButtonPressed,
+      ]}>
       <Icon size={22} color={color ?? colors.text} strokeWidth={ICON_STROKE} />
     </Pressable>
   );
 };
 
-export const CaptureTypeIcon: React.FC<{captureType: CaptureType; size?: number}> = ({
-  captureType,
-  size = 36,
-}) => {
+export const CaptureTypeIcon: React.FC<{
+  captureType: CaptureType;
+  size?: number;
+}> = ({captureType, size = 36}) => {
   const styles = useUiStyles();
   const {colors} = useTheme();
   const Icon = CAPTURE_TYPE_ICONS[captureType];
   return (
     <View style={[styles.typeIcon, {width: size, height: size}]}>
-      <Icon size={size * 0.5} color={colors.primary} strokeWidth={ICON_STROKE} />
+      <Icon
+        size={size * 0.5}
+        color={colors.primary}
+        strokeWidth={ICON_STROKE}
+      />
     </View>
   );
 };
 
-export const SectionHeader: React.FC<{title: string; right?: React.ReactNode}> = ({
-  title,
-  right,
-}) => {
+export const SectionHeader: React.FC<{
+  title: string;
+  right?: React.ReactNode;
+}> = ({title, right}) => {
   const styles = useUiStyles();
   return (
     <View style={styles.sectionHeader}>

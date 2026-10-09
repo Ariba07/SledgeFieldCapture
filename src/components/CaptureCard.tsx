@@ -1,5 +1,12 @@
 import React from 'react';
-import {Pressable, ScrollView, StyleProp, Text, View, ViewStyle} from 'react-native';
+import {
+  Pressable,
+  ScrollView,
+  StyleProp,
+  Text,
+  View,
+  ViewStyle,
+} from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import {RotateCw} from 'lucide-react-native';
 import {FieldCapture, CAPTURE_TYPE_LABELS, PRIORITY_LABELS} from '../types';
@@ -19,7 +26,13 @@ interface Props {
   style?: StyleProp<ViewStyle>;
 }
 
-export const CaptureCard: React.FC<Props> = ({capture, progress, onPress, onRetry, style}) => {
+export const CaptureCard: React.FC<Props> = ({
+  capture,
+  progress,
+  onPress,
+  onRetry,
+  style,
+}) => {
   const styles = useCaptureCardStyles();
   const {colors} = useTheme();
   const navigation = useNavigation();
@@ -31,7 +44,9 @@ export const CaptureCard: React.FC<Props> = ({capture, progress, onPress, onRetr
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={`${CAPTURE_TYPE_LABELS[capture.captureType]}, ${capture.projectName}`}
+      accessibilityLabel={`${CAPTURE_TYPE_LABELS[capture.captureType]}, ${
+        capture.projectName
+      }`}
       style={({pressed}) => [styles.card, pressed && styles.pressed, style]}>
       <View style={styles.header}>
         <CaptureTypeIcon captureType={capture.captureType} />
@@ -43,7 +58,10 @@ export const CaptureCard: React.FC<Props> = ({capture, progress, onPress, onRetr
             {CAPTURE_TYPE_LABELS[capture.captureType]} · {capture.location}
           </Text>
         </View>
-        <SyncBadge status={capture.syncStatus} retryCount={capture.retryCount} />
+        <SyncBadge
+          status={capture.syncStatus}
+          retryCount={capture.retryCount}
+        />
       </View>
 
       {capture.notes ? (
@@ -62,10 +80,15 @@ export const CaptureCard: React.FC<Props> = ({capture, progress, onPress, onRetr
             <Pressable
               key={a.id}
               onPress={() =>
-                navigation.navigate('MediaViewer', {captureId: capture.id, index})
+                navigation.navigate('MediaViewer', {
+                  captureId: capture.id,
+                  index,
+                })
               }
               accessibilityRole="imagebutton"
-              accessibilityLabel={`View ${a.kind} ${index + 1} of ${attachments.length}`}
+              accessibilityLabel={`View ${a.kind} ${index + 1} of ${
+                attachments.length
+              }`}
               style={({pressed}) => pressed && styles.thumbPressed}>
               <AttachmentThumb attachment={a} size={64} />
             </Pressable>

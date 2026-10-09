@@ -31,13 +31,17 @@ export const CaptureGrid: React.FC<Props> = ({
   // itself. Fall back to the window until the first layout pass.
   const windowLayout = useLayout();
   const [width, setWidth] = useState<number | null>(null);
-  const {columns, gap, gutter, itemWidth} = width ? computeLayout(width) : windowLayout;
+  const {columns, gap, gutter, itemWidth} = width
+    ? computeLayout(width)
+    : windowLayout;
   const available = width ?? windowLayout.listWidth;
   // Centre with padding rather than a fixed content width.
   const sidePadding = gutter + Math.max(0, (available - MAX_LIST_WIDTH) / 2);
 
   return (
-    <View style={captureGridStyles.fill} onLayout={e => setWidth(Math.round(e.nativeEvent.layout.width))}>
+    <View
+      style={captureGridStyles.fill}
+      onLayout={e => setWidth(Math.round(e.nativeEvent.layout.width))}>
       <FlatList
         // numColumns can't change on a mounted FlatList; remount on rotation / resize.
         key={`grid-${columns}`}

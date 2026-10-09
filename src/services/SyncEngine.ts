@@ -100,7 +100,8 @@ export class SyncEngine {
       return {
         ...c,
         version,
-        syncedVersion: c.syncedVersion ?? (c.syncStatus === 'synced' ? version : undefined),
+        syncedVersion:
+          c.syncedVersion ?? (c.syncStatus === 'synced' ? version : undefined),
         syncStatus: c.syncStatus === 'syncing' ? 'pending' : c.syncStatus,
       };
     });
@@ -153,7 +154,10 @@ export class SyncEngine {
    * 'pending' with fresh attempts; one that's mid-upload is left alone and
    * re-queued when that upload finishes.
    */
-  update = async (id: string, changes: Partial<CaptureDraft>): Promise<void> => {
+  update = async (
+    id: string,
+    changes: Partial<CaptureDraft>,
+  ): Promise<void> => {
     await this.ensureLoaded();
     const current = this.find(id);
     if (!current) {
@@ -244,7 +248,10 @@ export class SyncEngine {
     }
   }
 
-  private nextDue(force: boolean, attempted: Set<string>): FieldCapture | undefined {
+  private nextDue(
+    force: boolean,
+    attempted: Set<string>,
+  ): FieldCapture | undefined {
     const now = Date.now();
     // Stored newest-first; upload oldest-first.
     for (let i = this.captures.length - 1; i >= 0; i--) {
@@ -335,8 +342,14 @@ export class SyncEngine {
         .reduce((sum, a) => sum + a.sizeBytes, 0);
 
       this.setProgress(id, doneBytes / totalBytes);
-      const remoteUrl = await this.transport.uploadAttachment(capture, next, fraction =>
-        this.setProgress(id, (doneBytes + fraction * next.sizeBytes) / totalBytes),
+      const remoteUrl = await this.transport.uploadAttachment(
+        capture,
+        next,
+        fraction =>
+          this.setProgress(
+            id,
+            (doneBytes + fraction * next.sizeBytes) / totalBytes,
+          ),
       );
       this.patchAttachment(id, next.id, {remoteUrl});
       await this.persist();
@@ -402,7 +415,11 @@ export class SyncEngine {
     return found;
   }
 
-  private patchAttachment(captureId: string, attachmentId: string, changes: Partial<Attachment>) {
+  private patchAttachment(
+    captureId: string,
+    attachmentId: string,
+    changes: Partial<Attachment>,
+  ) {
     const capture = this.find(captureId);
     if (capture?.attachments) {
       this.patch(captureId, {

@@ -2,9 +2,17 @@ import {makeStyles, radius, spacing, type} from '../../theme';
 
 export const useHomeScreenStyles = makeStyles(c => ({
   safe: {flex: 1, backgroundColor: c.background},
-  headerBlock: {gap: spacing.lg, paddingTop: spacing.sm, paddingBottom: spacing.lg},
+  headerBlock: {
+    gap: spacing.lg,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.lg,
+  },
   filterWide: {maxWidth: 480},
-  titleRow: {flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between'},
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
   largeTitle: {...type.largeTitle, color: c.text},
   connection: {flexDirection: 'row', alignItems: 'center', gap: 6},
   dot: {width: 8, height: 8, borderRadius: 4},
@@ -33,7 +41,12 @@ export const useHomeScreenStyles = makeStyles(c => ({
     marginTop: spacing.sm,
     maxWidth: 300,
   },
-  emptyButton: {marginTop: spacing.xl, alignSelf: 'center', width: '100%', maxWidth: 360},
+  emptyButton: {
+    marginTop: spacing.xl,
+    alignSelf: 'center',
+    width: '100%',
+    maxWidth: 360,
+  },
   filterEmpty: {
     ...type.callout,
     color: c.textTertiary,

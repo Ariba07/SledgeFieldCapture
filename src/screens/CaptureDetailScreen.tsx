@@ -5,7 +5,12 @@ import {useSyncContext} from '../context/SyncContext';
 import {RootStackScreenProps} from '../navigation/types';
 import {SyncBadge} from '../components/SyncBadge';
 import {MediaCarousel} from '../components/MediaCarousel';
-import {Button, CaptureTypeIcon, ICON_STROKE, SectionHeader} from '../components/ui';
+import {
+  Button,
+  CaptureTypeIcon,
+  ICON_STROKE,
+  SectionHeader,
+} from '../components/ui';
 import {CAPTURE_TYPE_LABELS, FieldCapture, PRIORITY_LABELS} from '../types';
 import {formatTimestamp} from '../utils/helpers';
 import {useTheme} from '../theme';
@@ -17,7 +22,9 @@ const WIDE_WIDTH = 1180;
 const statusDetail = (c: FieldCapture, isOnline: boolean): string => {
   switch (c.syncStatus) {
     case 'synced':
-      return c.syncedAt ? `Uploaded ${formatTimestamp(c.syncedAt).toLowerCase()}` : 'Uploaded';
+      return c.syncedAt
+        ? `Uploaded ${formatTimestamp(c.syncedAt).toLowerCase()}`
+        : 'Uploaded';
     case 'syncing':
       return 'Uploading now…';
     case 'error':
@@ -31,17 +38,19 @@ const statusDetail = (c: FieldCapture, isOnline: boolean): string => {
           ? 'Your changes are queued for upload.'
           : 'Changes saved on this device. They upload when you reconnect.';
       }
-      return isOnline ? 'Queued for upload.' : 'Saved on this device. Uploads when you reconnect.';
+      return isOnline
+        ? 'Queued for upload.'
+        : 'Saved on this device. Uploads when you reconnect.';
   }
 };
 
-export const CaptureDetailScreen: React.FC<RootStackScreenProps<'CaptureDetail'>> = ({
-  navigation,
-  route,
-}) => {
+export const CaptureDetailScreen: React.FC<
+  RootStackScreenProps<'CaptureDetail'>
+> = ({navigation, route}) => {
   const styles = useCaptureDetailScreenStyles();
   const {colors} = useTheme();
-  const {captures, progress, isOnline, retryCapture, deleteCapture} = useSyncContext();
+  const {captures, progress, isOnline, retryCapture, deleteCapture} =
+    useSyncContext();
   const {sizeClass, gutter} = useLayout();
   const capture = captures.find(c => c.id === route.params.captureId);
 
@@ -60,31 +69,50 @@ export const CaptureDetailScreen: React.FC<RootStackScreenProps<'CaptureDetail'>
   }
 
   const handleDelete = () => {
-    Alert.alert('Delete this capture?', 'It will be removed from this device. This can’t be undone.', [
-      {text: 'Cancel', style: 'cancel'},
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: async () => {
-          navigation.goBack();
-          await deleteCapture(capture.id);
+    Alert.alert(
+      'Delete this capture?',
+      'It will be removed from this device. This can’t be undone.',
+      [
+        {text: 'Cancel', style: 'cancel'},
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            navigation.goBack();
+            await deleteCapture(capture.id);
+          },
         },
-      },
-    ]);
+      ],
+    );
   };
 
   const attachments = capture.attachments ?? [];
   const twoColumn = sizeClass === 'expanded' && attachments.length > 0;
-  const percent = progress[capture.id] != null ? Math.round(progress[capture.id] * 100) : null;
+  const percent =
+    progress[capture.id] != null
+      ? Math.round(progress[capture.id] * 100)
+      : null;
   const details: [string, string, string?][] = [
-    ['Priority', PRIORITY_LABELS[capture.priority], colors.priority[capture.priority]],
+    [
+      'Priority',
+      PRIORITY_LABELS[capture.priority],
+      colors.priority[capture.priority],
+    ],
     ...(capture.workerCount
-      ? ([['Workers on site', String(capture.workerCount)]] as [string, string][])
+      ? ([['Workers on site', String(capture.workerCount)]] as [
+          string,
+          string,
+        ][])
       : []),
-    ...(capture.weather ? ([['Weather', capture.weather]] as [string, string][]) : []),
+    ...(capture.weather
+      ? ([['Weather', capture.weather]] as [string, string][])
+      : []),
     ['Captured', formatTimestamp(capture.capturedAt)],
     ...(capture.updatedAt
-      ? ([['Last edited', formatTimestamp(capture.updatedAt)]] as [string, string][])
+      ? ([['Last edited', formatTimestamp(capture.updatedAt)]] as [
+          string,
+          string,
+        ][])
       : []),
   ];
 
@@ -93,7 +121,10 @@ export const CaptureDetailScreen: React.FC<RootStackScreenProps<'CaptureDetail'>
       style={styles.screen}
       contentContainerStyle={[
         styles.content,
-        {padding: gutter, maxWidth: twoColumn ? WIDE_WIDTH : READING_WIDTH + gutter * 2},
+        {
+          padding: gutter,
+          maxWidth: twoColumn ? WIDE_WIDTH : READING_WIDTH + gutter * 2,
+        },
       ]}>
       <View style={[styles.columns, twoColumn && styles.columnsWide]}>
         <View style={[styles.column, twoColumn && styles.infoColumn]}>
@@ -102,7 +133,11 @@ export const CaptureDetailScreen: React.FC<RootStackScreenProps<'CaptureDetail'>
             <View style={styles.titleText}>
               <Text style={styles.title}>{capture.projectName}</Text>
               <View style={styles.locationRow}>
-                <MapPin size={14} color={colors.textSecondary} strokeWidth={ICON_STROKE} />
+                <MapPin
+                  size={14}
+                  color={colors.textSecondary}
+                  strokeWidth={ICON_STROKE}
+                />
                 <Text style={styles.location}>{capture.location}</Text>
               </View>
             </View>
@@ -111,13 +146,18 @@ export const CaptureDetailScreen: React.FC<RootStackScreenProps<'CaptureDetail'>
               icon={Pencil}
               size="sm"
               variant="secondary"
-              onPress={() => navigation.navigate('EditCapture', {captureId: capture.id})}
+              onPress={() =>
+                navigation.navigate('EditCapture', {captureId: capture.id})
+              }
               accessibilityLabel="Edit capture"
             />
           </View>
 
           <View style={styles.card}>
-            <SyncBadge status={capture.syncStatus} retryCount={capture.retryCount} />
+            <SyncBadge
+              status={capture.syncStatus}
+              retryCount={capture.retryCount}
+            />
             <Text
               style={[
                 styles.statusDetail,
@@ -144,9 +184,13 @@ export const CaptureDetailScreen: React.FC<RootStackScreenProps<'CaptureDetail'>
             <SectionHeader title="Details" />
             <View style={styles.group}>
               {details.map(([label, value, color], i) => (
-                <View key={label} style={[styles.row, i > 0 && styles.rowDivider]}>
+                <View
+                  key={label}
+                  style={[styles.row, i > 0 && styles.rowDivider]}>
                   <Text style={styles.rowLabel}>{label}</Text>
-                  <Text style={[styles.rowValue, color ? {color} : null]}>{value}</Text>
+                  <Text style={[styles.rowValue, color ? {color} : null]}>
+                    {value}
+                  </Text>
                 </View>
               ))}
             </View>
@@ -175,7 +219,10 @@ export const CaptureDetailScreen: React.FC<RootStackScreenProps<'CaptureDetail'>
             <MediaCarousel
               attachments={attachments}
               onOpen={index =>
-                navigation.navigate('MediaViewer', {captureId: capture.id, index})
+                navigation.navigate('MediaViewer', {
+                  captureId: capture.id,
+                  index,
+                })
               }
             />
           </View>

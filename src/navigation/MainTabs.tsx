@@ -36,7 +36,10 @@ export const MainTabs: React.FC = () => {
         // Icon above label keeps the rail ~80pt wide instead of a full sidebar.
         tabBarLabelPosition: rail ? 'below-icon' : undefined,
         tabBarStyle: rail
-          ? {backgroundColor: colors.background, borderRightColor: colors.border}
+          ? {
+              backgroundColor: colors.background,
+              borderRightColor: colors.border,
+            }
           : {backgroundColor: colors.background, borderTopColor: colors.border},
         tabBarLabelStyle: {fontSize: 11, fontWeight: '600'},
       }}>

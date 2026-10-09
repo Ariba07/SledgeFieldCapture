@@ -29,7 +29,9 @@ export const StorageService: CaptureStore & {clearAll(): Promise<void>} = {
 
   saveAll(captures) {
     const json = JSON.stringify(captures); // snapshot now, not when the write runs
-    const write = writeChain.then(() => AsyncStorage.setItem(STORAGE_KEY, json));
+    const write = writeChain.then(() =>
+      AsyncStorage.setItem(STORAGE_KEY, json),
+    );
     // Keep the chain alive even if this write fails; the caller still sees the error.
     writeChain = write.catch(() => {});
     return write;

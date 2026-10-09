@@ -63,7 +63,11 @@ export const useCaptureFormStyles = makeStyles(c => ({
   notesInput: {minHeight: 112},
   workersField: {width: 160},
   mediaButtons: {flexDirection: 'row', gap: spacing.sm},
-  thumbRow: {gap: spacing.sm, paddingHorizontal: spacing.lg, paddingTop: spacing.md},
+  thumbRow: {
+    gap: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+  },
   importingTile: {
     width: 80,
     height: 80,

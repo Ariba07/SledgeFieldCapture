@@ -24,9 +24,19 @@ export const useMediaCarouselStyles = makeStyles(c => ({
     justifyContent: 'center',
   },
   expandPressed: {backgroundColor: 'rgba(0,0,0,0.75)'},
-  meta: {flexDirection: 'row', justifyContent: 'space-between', gap: spacing.sm, marginTop: spacing.sm},
+  meta: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+    marginTop: spacing.sm,
+  },
   metaText: {...type.caption, color: c.textSecondary},
-  dots: {flexDirection: 'row', justifyContent: 'center', gap: 6, marginTop: spacing.md},
+  dots: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 6,
+    marginTop: spacing.md,
+  },
   dot: {width: 6, height: 6, borderRadius: 3, backgroundColor: c.borderStrong},
   dotActive: {backgroundColor: c.primary, width: 18},
 }));
