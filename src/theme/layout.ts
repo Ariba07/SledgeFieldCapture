@@ -17,15 +17,16 @@ const MEDIUM = 600;
 const EXPANDED = 1024;
 
 /** Lists stop growing past this so cards don't stretch across a 13" screen. */
-const MAX_LIST_WIDTH = 1280;
+export const MAX_LIST_WIDTH = 1280;
 /** Comfortable line length for forms and reading. */
 export const READING_WIDTH = 680;
 
-export const useLayout = () => {
-  const {width, height} = useWindowDimensions();
-  const insets = useSafeAreaInsets();
-  const available = width - insets.left - insets.right;
-
+/**
+ * Layout metrics for a given available width. Pass the width of the container
+ * you're laying out (e.g. from onLayout) — the window can be wider than the
+ * space a screen actually gets, for example beside a navigation rail.
+ */
+export const computeLayout = (available: number) => {
   const sizeClass: SizeClass =
     available >= EXPANDED ? 'expanded' : available >= MEDIUM ? 'medium' : 'compact';
   const compact = sizeClass === 'compact';
@@ -37,15 +38,16 @@ export const useLayout = () => {
   const listWidth = Math.min(available, MAX_LIST_WIDTH);
   const itemWidth = Math.floor((listWidth - gutter * 2 - gap * (columns - 1)) / columns);
 
+  return {sizeClass, isCompact: compact, gutter, gap, columns, listWidth, itemWidth};
+};
+
+/** Window-level layout (window width minus safe-area insets). */
+export const useLayout = () => {
+  const {width, height} = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   return {
-    sizeClass,
-    isCompact: compact,
+    ...computeLayout(width - insets.left - insets.right),
     isLandscape: width > height,
     insets,
-    gutter,
-    gap,
-    columns,
-    listWidth,
-    itemWidth,
   };
 };

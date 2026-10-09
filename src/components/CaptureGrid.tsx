@@ -1,8 +1,8 @@
-import React from 'react';
+import React, {useState} from 'react';
 import {FlatList, StyleSheet, View} from 'react-native';
 import {FieldCapture} from '../types';
 import {CaptureCard} from './CaptureCard';
-import {useLayout} from '../theme/layout';
+import {MAX_LIST_WIDTH, computeLayout, useLayout} from '../theme/layout';
 
 interface Props {
   data: FieldCapture[];
@@ -16,7 +16,7 @@ interface Props {
 }
 
 /**
- * Capture list that becomes a 2- or 3-column grid as the window widens.
+ * Capture list that becomes a 2- or 3-column grid as the space widens.
  * Content is centred and capped in width; cards in a row share a height.
  */
 export const CaptureGrid: React.FC<Props> = ({
@@ -29,41 +29,51 @@ export const CaptureGrid: React.FC<Props> = ({
   empty,
   bottomPadding = 0,
 }) => {
-  const {columns, gap, gutter, listWidth, itemWidth} = useLayout();
+  // Measure the wrapper, not the list: the wrapper's width comes from its
+  // parent (which may sit beside a nav rail), so it can't feed back into
+  // itself. Fall back to the window until the first layout pass.
+  const windowLayout = useLayout();
+  const [width, setWidth] = useState<number | null>(null);
+  const {columns, gap, gutter, itemWidth} = width ? computeLayout(width) : windowLayout;
+  const available = width ?? windowLayout.listWidth;
+  // Centre with padding rather than a fixed content width.
+  const sidePadding = gutter + Math.max(0, (available - MAX_LIST_WIDTH) / 2);
 
   return (
-    <FlatList
-      // numColumns can't change on a mounted FlatList; remount on rotation / resize.
-      key={`grid-${columns}`}
-      numColumns={columns}
-      data={data}
-      keyExtractor={item => item.id}
-      extraData={progress}
-      ListHeaderComponent={header}
-      ListFooterComponent={footer}
-      ListEmptyComponent={empty}
-      columnWrapperStyle={columns > 1 ? {gap} : undefined}
-      renderItem={({item}) => (
-        <View style={{width: itemWidth, marginBottom: gap}}>
-          <CaptureCard
-            capture={item}
-            progress={progress[item.id]}
-            onPress={() => onOpen(item.id)}
-            onRetry={onRetry}
-            style={styles.fill}
-          />
-        </View>
-      )}
-      contentContainerStyle={[
-        styles.content,
-        {width: listWidth, paddingHorizontal: gutter, paddingBottom: bottomPadding},
-      ]}
-      showsVerticalScrollIndicator={false}
-    />
+    <View style={styles.fill} onLayout={e => setWidth(Math.round(e.nativeEvent.layout.width))}>
+      <FlatList
+        // numColumns can't change on a mounted FlatList; remount on rotation / resize.
+        key={`grid-${columns}`}
+        numColumns={columns}
+        data={data}
+        keyExtractor={item => item.id}
+        extraData={progress}
+        ListHeaderComponent={header}
+        ListFooterComponent={footer}
+        ListEmptyComponent={empty}
+        columnWrapperStyle={columns > 1 ? {gap} : undefined}
+        renderItem={({item}) => (
+          <View style={{width: itemWidth, marginBottom: gap}}>
+            <CaptureCard
+              capture={item}
+              progress={progress[item.id]}
+              onPress={() => onOpen(item.id)}
+              onRetry={onRetry}
+              style={styles.fill}
+            />
+          </View>
+        )}
+        contentContainerStyle={[
+          styles.content,
+          {paddingHorizontal: sidePadding, paddingBottom: bottomPadding},
+        ]}
+        showsVerticalScrollIndicator={false}
+      />
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  content: {alignSelf: 'center', flexGrow: 1},
   fill: {flex: 1},
+  content: {flexGrow: 1},
 });

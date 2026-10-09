@@ -147,7 +147,7 @@ const useStyles = makeStyles(c => ({
     marginTop: spacing.sm,
     maxWidth: 300,
   },
-  emptyButton: {marginTop: spacing.xl, alignSelf: 'stretch'},
+  emptyButton: {marginTop: spacing.xl, alignSelf: 'center', width: '100%', maxWidth: 360},
   filterEmpty: {
     ...type.callout,
     color: c.textTertiary,
