@@ -100,6 +100,12 @@ All sync behaviour lives in **`SyncEngine`**, a plain TypeScript class. React on
 
 ---
 
+## 🔭 Next steps
+
+- **Apple Watch companion.** React Native doesn't run on watchOS, so this would be a small SwiftUI watch app talking to the phone over WatchConnectivity (bridged with `react-native-watch-connectivity`). Scope: a complication showing unsynced captures ("3 waiting"), quick voice-note captures via dictation that queue on the watch and hand off to the phone as `pending`, and an alert when a capture fails to sync.
+
+---
+
 ## 🚀 Getting Started
 
 ### Prerequisites
