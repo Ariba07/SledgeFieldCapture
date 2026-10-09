@@ -52,7 +52,6 @@ export const CaptureCard: React.FC<Props> = ({capture, progress, onPress, onRetr
       ) : null}
 
       {attachments.length > 0 ? (
-        // Scrolls sideways when there are more than fit; tap one to view it full screen.
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}

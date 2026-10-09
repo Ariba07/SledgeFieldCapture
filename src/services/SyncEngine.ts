@@ -70,8 +70,6 @@ export class SyncEngine {
     this.options = {...DEFAULT_OPTIONS, ...options};
   }
 
-  // ── Lifecycle ──────────────────────────────────────────────────────
-
   start = (): Promise<void> => {
     this.stopped = false;
     if (!this.ready) {
@@ -108,16 +106,12 @@ export class SyncEngine {
     }
   }
 
-  // ── Subscription (shaped for useSyncExternalStore) ─────────────────
-
   subscribe = (listener: () => void): (() => void) => {
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);
   };
 
   getSnapshot = (): SyncSnapshot => this.snapshot;
-
-  // ── Public actions ─────────────────────────────────────────────────
 
   setOnline = (online: boolean): void => {
     if (online === this.isOnline) {
@@ -218,8 +212,6 @@ export class SyncEngine {
     this.flushing = this.drain(force);
     return this.flushing;
   };
-
-  // ── Queue processing ───────────────────────────────────────────────
 
   private async drain(force: boolean) {
     try {
@@ -378,8 +370,6 @@ export class SyncEngine {
       this.retryTimer = null;
     }
   }
-
-  // ── State helpers ──────────────────────────────────────────────────
 
   private ensureLoaded(): Promise<void> {
     if (!this.ready) {

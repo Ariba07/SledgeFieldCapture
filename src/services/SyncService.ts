@@ -65,7 +65,7 @@ export const SyncService: CaptureTransport & {
       }, PROGRESS_TICK_MS);
     });
 
-    // ── Real upload (streams from disk, works for large videos) ───────
+    // Real upload (streams from disk, so large videos don't load into memory):
     // import {uploadFiles} from '@dr.pogodin/react-native-fs';
     // import {attachmentPath} from './MediaService';
     // const {promise} = uploadFiles({
@@ -94,7 +94,7 @@ export const SyncService: CaptureTransport & {
       throw failure();
     }
 
-    // ── Real API call ────────────────────────────────────────────────
+    // Real API call:
     // const res = await fetch(`${API_URL}/captures`, {
     //   method: 'POST',
     //   headers: {
@@ -106,7 +106,6 @@ export const SyncService: CaptureTransport & {
     // if (!res.ok) {
     //   throw new SyncError(`Server returned ${res.status}`, res.status >= 500 || res.status === 429);
     // }
-    // ─────────────────────────────────────────────────────────────────
   },
 
   setSimulateServerErrors(on) {

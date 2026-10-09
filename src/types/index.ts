@@ -1,27 +1,18 @@
-// ──────────────────────────────────────────────────────────────────────────────
-//  Core domain types for Sledge Field Capture
-//  Domain: Construction AI — built for jobsite use (offline, gloves on, bad signal)
-// ──────────────────────────────────────────────────────────────────────────────
-
 export type SyncStatus = 'pending' | 'syncing' | 'synced' | 'error';
 
-/**
- * The type of construction field record being captured.
- * Mirrors real Sledge product features visible on their site.
- */
 export type CaptureType =
-  | 'daily_log'    // Daily progress logs
-  | 'rfi'          // Request for Information
-  | 'punchlist'    // Punchlist / deficiency item
-  | 'issue'        // General site issue / observation
-  | 'inspection';  // Inspection checkpoint
+  | 'daily_log'
+  | 'rfi' // Request for Information
+  | 'punchlist'
+  | 'issue'
+  | 'inspection';
 
 export type Priority = 'low' | 'medium' | 'high';
 
 export type AttachmentKind = 'photo' | 'video';
 
 export interface Attachment {
-  id: string;              // uuid v4
+  id: string;
   kind: AttachmentKind;
   fileName: string;        // Under <Documents>/attachments — the absolute path is rebuilt at
                            // runtime because the iOS app container path changes on reinstall
@@ -29,27 +20,27 @@ export interface Attachment {
   sizeBytes: number;
   width?: number;
   height?: number;
-  durationSec?: number;    // Videos only
+  durationSec?: number;
   remoteUrl?: string;      // Set once uploaded; uploaded files are skipped on retry
 }
 
 export interface FieldCapture {
-  id: string;              // uuid v4
+  id: string;
   captureType: CaptureType;
   projectName: string;
-  location: string;        // Section / level / grid reference
+  location: string;
   notes: string;
   priority: Priority;
-  workerCount?: number;    // Relevant for daily logs
-  weather?: string;        // Relevant for daily logs (jobsite condition)
-  attachments?: Attachment[]; // Photos / videos, uploaded before the record itself
+  workerCount?: number;    // Daily logs only
+  weather?: string;        // Daily logs only
+  attachments?: Attachment[];
   capturedAt: string;      // ISO 8601
   updatedAt?: string;      // ISO 8601 — last local edit
   version: number;         // +1 on every local edit
   syncedVersion?: number;  // Last version the server confirmed; version > syncedVersion ⇒ needs sync
   syncStatus: SyncStatus;
   syncedAt?: string;       // ISO 8601 — set once synced
-  errorMessage?: string;   // Last sync error message
+  errorMessage?: string;
   retryCount: number;      // Failed attempts since last manual retry
   nextRetryAt?: string;    // ISO 8601 — earliest time an automatic retry may run
 }
@@ -72,8 +63,6 @@ export interface AppState {
   isOnline: boolean;
   isSyncing: boolean;
 }
-
-// ── Display helpers ───────────────────────────────────────────────────────────
 
 export const CAPTURE_TYPE_LABELS: Record<CaptureType, string> = {
   daily_log:  'Daily log',

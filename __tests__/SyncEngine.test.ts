@@ -3,8 +3,6 @@ import {CaptureStore} from '../src/services/StorageService';
 import {CaptureTransport, SyncError} from '../src/services/SyncService';
 import {Attachment, FieldCapture, SyncStatus} from '../src/types';
 
-// ── Fakes ────────────────────────────────────────────────────────────
-
 class MemoryStore implements CaptureStore {
   data: FieldCapture[] = [];
   async getAll() {
@@ -88,8 +86,6 @@ const settle = async () => {
 
 const statusOf = (engine: SyncEngine, id: string) =>
   engine.getSnapshot().captures.find(c => c.id === id)?.syncStatus;
-
-// ── Tests ────────────────────────────────────────────────────────────
 
 describe('SyncEngine', () => {
   let store: MemoryStore;

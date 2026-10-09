@@ -15,10 +15,6 @@ interface Props {
   bottomPadding?: number;
 }
 
-/**
- * Capture list that becomes a 2- or 3-column grid as the space widens.
- * Content is centred and capped in width; cards in a row share a height.
- */
 export const CaptureGrid: React.FC<Props> = ({
   data,
   progress,

@@ -1,7 +1,3 @@
-/**
- * Full-screen media viewer: swipe between a capture's photos and videos,
- * pinch to zoom photos (iOS), videos play with native controls.
- */
 import React, {useRef, useState} from 'react';
 import {
   FlatList,

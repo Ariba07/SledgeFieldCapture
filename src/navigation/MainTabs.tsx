@@ -21,7 +21,6 @@ const SyncIcon = ({color, size}: TabIconProps) => (
 
 export const MainTabs: React.FC = () => {
   const {colors} = useTheme();
-  // Tablets and wide windows get a side rail instead of a bottom bar.
   const rail = useLayout().sizeClass === 'expanded';
   const {captures} = useSyncContext();
   const unsyncedCount = captures.filter(c => c.syncStatus !== 'synced').length;

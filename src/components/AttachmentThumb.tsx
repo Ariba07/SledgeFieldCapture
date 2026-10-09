@@ -12,7 +12,6 @@ interface Props {
   onRemove?: (attachment: Attachment) => void;
 }
 
-/** Square preview: the photo itself, or a dark tile with a play glyph and the video's length. */
 export const AttachmentThumb: React.FC<Props> = ({attachment, size, onRemove}) => {
   const styles = useStyles();
   const showMeta = size >= 56;

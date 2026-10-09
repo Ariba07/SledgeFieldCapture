@@ -73,7 +73,6 @@ export const CaptureDetailScreen: React.FC<RootStackScreenProps<'CaptureDetail'>
   };
 
   const attachments = capture.attachments ?? [];
-  // Wide windows: info on the left, media on the right.
   const twoColumn = sizeClass === 'expanded' && attachments.length > 0;
   const percent = progress[capture.id] != null ? Math.round(progress[capture.id] * 100) : null;
   const details: [string, string, string?][] = [
@@ -97,7 +96,6 @@ export const CaptureDetailScreen: React.FC<RootStackScreenProps<'CaptureDetail'>
       ]}>
       <View style={[styles.columns, twoColumn && styles.columnsWide]}>
         <View style={[styles.column, twoColumn && styles.infoColumn]}>
-          {/* Title */}
           <View style={styles.titleBlock}>
             <CaptureTypeIcon captureType={capture.captureType} size={44} />
             <View style={styles.titleText}>
@@ -117,7 +115,6 @@ export const CaptureDetailScreen: React.FC<RootStackScreenProps<'CaptureDetail'>
             />
           </View>
 
-          {/* Sync status */}
           <View style={styles.card}>
             <SyncBadge status={capture.syncStatus} retryCount={capture.retryCount} />
             <Text
@@ -142,7 +139,6 @@ export const CaptureDetailScreen: React.FC<RootStackScreenProps<'CaptureDetail'>
             ) : null}
           </View>
 
-          {/* Details */}
           <View style={styles.section}>
             <SectionHeader title="Details" />
             <View style={styles.group}>
@@ -155,7 +151,6 @@ export const CaptureDetailScreen: React.FC<RootStackScreenProps<'CaptureDetail'>
             </View>
           </View>
 
-          {/* Notes */}
           {capture.notes ? (
             <View style={styles.section}>
               <SectionHeader title="Notes" />

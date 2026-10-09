@@ -1,6 +1,3 @@
-/**
- * Small shared UI primitives built on the theme tokens.
- */
 import React from 'react';
 import {
   ActivityIndicator,
@@ -30,8 +27,6 @@ export const CAPTURE_TYPE_ICONS: Record<CaptureType, LucideIcon> = {
   issue: TriangleAlert,
   inspection: ClipboardCheck,
 };
-
-// ── Button ─────────────────────────────────────────────────────────────
 
 type ButtonVariant = 'primary' | 'secondary' | 'destructive' | 'ghost';
 
@@ -95,8 +90,6 @@ export const Button: React.FC<ButtonProps> = ({
   );
 };
 
-// ── IconButton ─────────────────────────────────────────────────────────
-
 export const IconButton: React.FC<{
   icon: LucideIcon;
   onPress: () => void;
@@ -117,8 +110,6 @@ export const IconButton: React.FC<{
   );
 };
 
-// ── CaptureTypeIcon ────────────────────────────────────────────────────
-
 export const CaptureTypeIcon: React.FC<{captureType: CaptureType; size?: number}> = ({
   captureType,
   size = 36,
@@ -133,8 +124,6 @@ export const CaptureTypeIcon: React.FC<{captureType: CaptureType; size?: number}
   );
 };
 
-// ── SectionHeader ──────────────────────────────────────────────────────
-
 export const SectionHeader: React.FC<{title: string; right?: React.ReactNode}> = ({
   title,
   right,
@@ -147,8 +136,6 @@ export const SectionHeader: React.FC<{title: string; right?: React.ReactNode}> =
     </View>
   );
 };
-
-// ── SegmentedControl ───────────────────────────────────────────────────
 
 export interface Segment<T extends string> {
   value: T;

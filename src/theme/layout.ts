@@ -16,9 +16,7 @@ export type SizeClass = 'compact' | 'medium' | 'expanded';
 const MEDIUM = 600;
 const EXPANDED = 1024;
 
-/** Lists stop growing past this so cards don't stretch across a 13" screen. */
 export const MAX_LIST_WIDTH = 1280;
-/** Comfortable line length for forms and reading. */
 export const READING_WIDTH = 680;
 
 /**

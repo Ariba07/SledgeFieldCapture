@@ -28,7 +28,6 @@ export const MAX_VIDEO_SECONDS = 60;
 
 const ATTACHMENTS_DIR = `${DocumentDirectoryPath}/attachments`;
 
-/** Thrown for picker failures the user should see (no camera, permission denied). */
 export class MediaError extends Error {}
 
 export const attachmentPath = (a: Attachment) => `${ATTACHMENTS_DIR}/${a.fileName}`;

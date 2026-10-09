@@ -170,7 +170,6 @@ export const CaptureForm: React.FC<Props> = ({initial, onSave, onCancel}) => {
           style={styles.flex}
           contentContainerStyle={styles.scroll}
           keyboardShouldPersistTaps="handled">
-          {/* Type */}
           <FieldLabel text="Type" first />
           <ScrollView
             horizontal
@@ -325,8 +324,6 @@ export const CaptureForm: React.FC<Props> = ({initial, onSave, onCancel}) => {
     </SafeAreaView>
   );
 };
-
-// ── Form field ─────────────────────────────────────────────────────────
 
 const FieldLabel: React.FC<{text: string; first?: boolean}> = ({text, first}) => {
   const styles = useStyles();

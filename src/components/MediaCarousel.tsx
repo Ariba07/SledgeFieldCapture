@@ -17,18 +17,12 @@ import {makeStyles, radius, spacing, type, useTheme} from '../theme';
 
 interface Props {
   attachments: Attachment[];
-  /** Open the full-screen viewer at this index. */
   onOpen: (index: number) => void;
 }
 
 const GAP = spacing.md;
 const MAX_HEIGHT = 440;
 
-/**
- * One item: full width at its natural aspect ratio.
- * Several: a horizontal carousel that snaps per item, with the next item
- * peeking in so it's obvious there's more, plus page dots.
- */
 export const MediaCarousel: React.FC<Props> = ({attachments, onOpen}) => {
   const styles = useStyles();
   const [width, setWidth] = useState(0);

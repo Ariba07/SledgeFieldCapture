@@ -17,7 +17,6 @@ const CONFIG: Record<SyncStatus, {label: string; icon: LucideIcon}> = {
   error: {label: 'Sync failed', icon: CircleAlert},
 };
 
-/** Icon + label in the status colour. A pending item that has already failed reads "Retrying". */
 export const SyncBadge: React.FC<Props> = ({status, retryCount = 0}) => {
   const styles = useStyles();
   const {colors} = useTheme();

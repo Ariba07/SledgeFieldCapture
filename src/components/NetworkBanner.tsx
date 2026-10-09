@@ -9,7 +9,6 @@ interface Props {
   pendingCount: number;
 }
 
-/** Persistent while offline, so it's always clear why nothing is uploading. */
 export const NetworkBanner: React.FC<Props> = ({isOnline, pendingCount}) => {
   const styles = useStyles();
   const {colors} = useTheme();
