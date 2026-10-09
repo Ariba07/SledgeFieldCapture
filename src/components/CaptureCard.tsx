@@ -76,6 +76,7 @@ export const CaptureCard: React.FC<Props> = ({capture, progress, onPress, onRetr
 
       <Text style={styles.meta} numberOfLines={1}>
         {formatTimestamp(capture.capturedAt)}
+        {capture.updatedAt ? '  ·  Edited' : ''}
         {capture.priority !== 'low' ? (
           <Text style={{color: colors.priority[capture.priority]}}>
             {'  ·  '}

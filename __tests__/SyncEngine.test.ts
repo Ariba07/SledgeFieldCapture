@@ -18,6 +18,7 @@ class MemoryStore implements CaptureStore {
 interface Call {
   id: string;
   kind: 'file' | 'record';
+  payload?: FieldCapture;
   resolve: () => void;
   reject: (e: Error) => void;
   onProgress?: (fraction: number) => void;
@@ -43,7 +44,7 @@ class ControlledTransport implements CaptureTransport {
   }
   uploadCapture(capture: FieldCapture) {
     return new Promise<void>((resolve, reject) => {
-      this.calls.push({id: capture.id, kind: 'record', resolve, reject});
+      this.calls.push({id: capture.id, kind: 'record', payload: capture, resolve, reject});
     });
   }
   get inFlight() {
@@ -67,6 +68,7 @@ const makeCapture = (id: string, syncStatus: SyncStatus = 'pending'): FieldCaptu
   capturedAt: new Date().toISOString(),
   syncStatus,
   retryCount: 0,
+  version: 1,
 });
 
 const makeAttachment = (id: string, sizeBytes: number): Attachment => ({
@@ -333,6 +335,111 @@ describe('SyncEngine', () => {
       jest.advanceTimersByTime(1000);
       await settle();
       expect(transport.calls.map(c => [c.kind, c.id])).toEqual([['file', 'p2']]);
+    });
+  });
+
+  describe('editing', () => {
+    it('edits a pending capture in place and uploads the latest data', async () => {
+      await engine.add(makeCapture('a'));
+      await engine.update('a', {notes: 'edited offline'});
+
+      const a = engine.getSnapshot().captures[0];
+      expect(a.version).toBe(2);
+      expect(a.syncStatus).toBe('pending');
+      expect(store.data[0].notes).toBe('edited offline');
+
+      engine.setOnline(true);
+      await settle();
+      expect(transport.calls[0].payload!.notes).toBe('edited offline');
+    });
+
+    it('puts a synced capture back in the queue and syncs the edit', async () => {
+      engine.setOnline(true);
+      await engine.add(makeCapture('a'));
+      await settle();
+      transport.succeed();
+      await settle();
+      expect(engine.getSnapshot().captures[0].syncedVersion).toBe(1);
+
+      await engine.update('a', {priority: 'high'});
+      await settle();
+      expect(statusOf(engine, 'a')).toBe('syncing');
+      expect(transport.calls[0].payload!.priority).toBe('high');
+
+      transport.succeed();
+      await settle();
+      const a = engine.getSnapshot().captures[0];
+      expect(a.syncStatus).toBe('synced');
+      expect(a.syncedVersion).toBe(2);
+    });
+
+    it('re-queues a capture edited while it was uploading', async () => {
+      engine.setOnline(true);
+      await engine.add(makeCapture('a'));
+      await settle();
+      expect(transport.calls[0].payload!.notes).toBe('');
+
+      await engine.update('a', {notes: 'changed mid-upload'});
+      expect(statusOf(engine, 'a')).toBe('syncing'); // in-flight upload untouched
+
+      transport.succeed(); // server now has version 1
+      await settle();
+      expect(engine.getSnapshot().captures[0].syncedVersion).toBe(1);
+      expect(transport.calls.map(c => c.payload!.notes)).toEqual(['changed mid-upload']);
+
+      transport.succeed();
+      await settle();
+      const a = engine.getSnapshot().captures[0];
+      expect(a.syncStatus).toBe('synced');
+      expect(a.syncedVersion).toBe(2);
+    });
+
+    it('gives a failed capture fresh attempts after an edit', async () => {
+      engine.setOnline(true);
+      await engine.add(makeCapture('a'));
+      await settle();
+      transport.fail(new SyncError('400', false));
+      await settle();
+      expect(statusOf(engine, 'a')).toBe('error');
+
+      await engine.update('a', {location: 'Level 4'});
+      await settle();
+      const a = engine.getSnapshot().captures[0];
+      expect(a.syncStatus).toBe('syncing');
+      expect(a.retryCount).toBe(0);
+      expect(a.errorMessage).toBeUndefined();
+    });
+
+    it('keeps upload progress for files that finished while the form was open', async () => {
+      engine.setOnline(true);
+      await engine.add({...makeCapture('a'), attachments: [makeAttachment('p1', 100)]});
+      await settle();
+      const staleFormCopy = [makeAttachment('p1', 100)]; // form opened before upload finished
+      transport.succeed(); // p1 uploaded
+      await settle();
+
+      await engine.update('a', {attachments: [...staleFormCopy, makeAttachment('p2', 100)]});
+      const files = engine.getSnapshot().captures[0].attachments!;
+      expect(files[0].remoteUrl).toBe('https://cdn.test/p1');
+      expect(files[1].remoteUrl).toBeUndefined();
+    });
+
+    it('upgrades captures saved before versioning', async () => {
+      const legacyStore = new MemoryStore();
+      const legacy = (status: SyncStatus) => {
+        const c: Partial<FieldCapture> = makeCapture(status, status);
+        delete c.version;
+        return c as FieldCapture;
+      };
+      legacyStore.data = [legacy('synced'), legacy('pending')];
+      const upgraded = new SyncEngine(legacyStore, transport);
+      await upgraded.start();
+
+      const [synced, pending] = upgraded.getSnapshot().captures;
+      expect(synced.version).toBe(1);
+      expect(synced.syncedVersion).toBe(1);
+      expect(pending.syncedVersion).toBeUndefined();
+      upgraded.stop();
     });
   });
 });

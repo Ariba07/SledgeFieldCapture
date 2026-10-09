@@ -10,6 +10,7 @@ import {StorageService} from '../services/StorageService';
 import {SyncService} from '../services/SyncService';
 import {SyncEngine} from '../services/SyncEngine';
 import {MediaService} from '../services/MediaService';
+import {CaptureDraft} from '../types';
 
 // isInternetReachable is null while unknown; only treat an explicit false as offline.
 const isReachable = (state: NetInfoState) =>
@@ -36,6 +37,15 @@ export const useSync = () => {
       ...state,
       addCapture: engine.add,
       retryCapture: engine.retry,
+      updateCapture: async (id: string, changes: Partial<CaptureDraft>) => {
+        const before = state.captures.find(c => c.id === id);
+        await engine.update(id, changes);
+        // Delete files the edit removed, now that the change is persisted.
+        if (before && changes.attachments) {
+          const kept = new Set(changes.attachments.map(a => a.id));
+          await MediaService.remove(before.attachments?.filter(a => !kept.has(a.id)));
+        }
+      },
       deleteCapture: async (id: string) => {
         const capture = state.captures.find(c => c.id === id);
         await engine.remove(id);

@@ -1,7 +1,7 @@
 import React, {useLayoutEffect} from 'react';
 import {Alert, Image, ScrollView, Text, View} from 'react-native';
 import Video from 'react-native-video';
-import {MapPin, RotateCw, Trash2} from 'lucide-react-native';
+import {MapPin, Pencil, RotateCw, Trash2} from 'lucide-react-native';
 import {useSyncContext} from '../context/SyncContext';
 import {RootStackScreenProps} from '../navigation/types';
 import {SyncBadge} from '../components/SyncBadge';
@@ -25,6 +25,11 @@ const statusDetail = (c: FieldCapture, isOnline: boolean): string => {
     case 'pending':
       if (c.retryCount > 0) {
         return `Attempt ${c.retryCount} failed — trying again shortly.`;
+      }
+      if (c.syncedVersion != null) {
+        return isOnline
+          ? 'Your changes are queued for upload.'
+          : 'Changes saved on this device. They upload when you reconnect.';
       }
       return isOnline ? 'Queued for upload.' : 'Saved on this device. Uploads when you reconnect.';
   }
@@ -79,6 +84,9 @@ export const CaptureDetailScreen: React.FC<RootStackScreenProps<'CaptureDetail'>
       : []),
     ...(capture.weather ? ([['Weather', capture.weather]] as [string, string][]) : []),
     ['Captured', formatTimestamp(capture.capturedAt)],
+    ...(capture.updatedAt
+      ? ([['Last edited', formatTimestamp(capture.updatedAt)]] as [string, string][])
+      : []),
   ];
 
   return (
@@ -100,6 +108,14 @@ export const CaptureDetailScreen: React.FC<RootStackScreenProps<'CaptureDetail'>
                 <Text style={styles.location}>{capture.location}</Text>
               </View>
             </View>
+            <Button
+              title="Edit"
+              icon={Pencil}
+              size="sm"
+              variant="secondary"
+              onPress={() => navigation.navigate('EditCapture', {captureId: capture.id})}
+              accessibilityLabel="Edit capture"
+            />
           </View>
 
           {/* Sync status */}

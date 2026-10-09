@@ -28,12 +28,12 @@ import {
 import {
   Attachment,
   CAPTURE_TYPE_LABELS,
+  CaptureDraft,
   CaptureType,
   FieldCapture,
   PRIORITY_LABELS,
   Priority,
 } from '../types';
-import {generateId} from '../utils/helpers';
 import {MAX_ATTACHMENTS, MediaService, MediaSource} from '../services/MediaService';
 import {AttachmentThumb} from './AttachmentThumb';
 import {Button, CAPTURE_TYPE_ICONS, ICON_STROKE, IconButton, SegmentedControl} from './ui';
@@ -41,7 +41,9 @@ import {TOUCH_TARGET, makeStyles, radius, spacing, type, useTheme} from '../them
 import {READING_WIDTH} from '../theme/layout';
 
 interface Props {
-  onSave: (capture: FieldCapture) => void;
+  /** Existing capture to edit; omit to create a new one. */
+  initial?: FieldCapture;
+  onSave: (draft: CaptureDraft) => void;
   onCancel: () => void;
 }
 
@@ -71,29 +73,34 @@ const NOTES_PLACEHOLDER: Record<CaptureType, string> = {
   inspection: 'Findings and pass / fail result.',
 };
 
-export const CaptureForm: React.FC<Props> = ({onSave, onCancel}) => {
+export const CaptureForm: React.FC<Props> = ({initial, onSave, onCancel}) => {
   const styles = useStyles();
   const {colors} = useTheme();
-  const [captureType, setCaptureType] = useState<CaptureType>('daily_log');
-  const [projectName, setProjectName] = useState('');
-  const [location, setLocation] = useState('');
-  const [notes, setNotes] = useState('');
-  const [priority, setPriority] = useState<Priority>('medium');
-  const [workerCount, setWorkerCount] = useState('');
-  const [weather, setWeather] = useState('');
-  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const editing = !!initial;
+  const [captureType, setCaptureType] = useState<CaptureType>(initial?.captureType ?? 'daily_log');
+  const [projectName, setProjectName] = useState(initial?.projectName ?? '');
+  const [location, setLocation] = useState(initial?.location ?? '');
+  const [notes, setNotes] = useState(initial?.notes ?? '');
+  const [priority, setPriority] = useState<Priority>(initial?.priority ?? 'medium');
+  const [workerCount, setWorkerCount] = useState(
+    initial?.workerCount != null ? String(initial.workerCount) : '',
+  );
+  const [weather, setWeather] = useState(initial?.weather ?? '');
+  const [attachments, setAttachments] = useState<Attachment[]>(initial?.attachments ?? []);
   const [importing, setImporting] = useState(false);
   const [showErrors, setShowErrors] = useState(false);
 
   // Media is copied into app storage as soon as it's picked. If the form is
-  // closed without saving (Cancel or swipe-down), delete those copies.
+  // closed without saving (Cancel or swipe-down), delete the copies added in
+  // this session — never the files the capture already had.
   const savedRef = useRef(false);
   const attachmentsRef = useRef(attachments);
   attachmentsRef.current = attachments;
+  const originalIds = useRef(new Set((initial?.attachments ?? []).map(a => a.id)));
   useEffect(
     () => () => {
       if (!savedRef.current) {
-        MediaService.remove(attachmentsRef.current);
+        MediaService.remove(attachmentsRef.current.filter(a => !originalIds.current.has(a.id)));
       }
     },
     [],
@@ -118,7 +125,10 @@ export const CaptureForm: React.FC<Props> = ({onSave, onCancel}) => {
 
   const removeMedia = (attachment: Attachment) => {
     setAttachments(prev => prev.filter(a => a.id !== attachment.id));
-    MediaService.remove([attachment]);
+    // Files the capture already had are deleted only once the edit is saved.
+    if (!originalIds.current.has(attachment.id)) {
+      MediaService.remove([attachment]);
+    }
   };
 
   const projectError = showErrors && !projectName.trim() ? 'Enter the project name.' : undefined;
@@ -129,22 +139,18 @@ export const CaptureForm: React.FC<Props> = ({onSave, onCancel}) => {
       setShowErrors(true);
       return;
     }
-    const capture: FieldCapture = {
-      id: generateId(),
+    const isDailyLog = captureType === 'daily_log';
+    savedRef.current = true;
+    onSave({
       captureType,
       projectName: projectName.trim(),
       location: location.trim(),
       notes: notes.trim(),
       priority,
-      workerCount: workerCount ? parseInt(workerCount, 10) : undefined,
-      weather: weather || undefined,
+      workerCount: isDailyLog && workerCount ? parseInt(workerCount, 10) : undefined,
+      weather: isDailyLog && weather ? weather : undefined,
       attachments,
-      capturedAt: new Date().toISOString(),
-      syncStatus: 'pending',
-      retryCount: 0,
-    };
-    savedRef.current = true;
-    onSave(capture);
+    });
   };
 
   return (
@@ -153,7 +159,7 @@ export const CaptureForm: React.FC<Props> = ({onSave, onCancel}) => {
       edges={Platform.OS === 'ios' ? ['bottom', 'left', 'right'] : ['top', 'bottom', 'left', 'right']}>
       <View style={styles.navBar}>
         <IconButton icon={X} onPress={onCancel} accessibilityLabel="Cancel" />
-        <Text style={styles.navTitle}>New capture</Text>
+        <Text style={styles.navTitle}>{editing ? 'Edit capture' : 'New capture'}</Text>
         <View style={styles.navSpacer} />
       </View>
 
@@ -302,13 +308,17 @@ export const CaptureForm: React.FC<Props> = ({onSave, onCancel}) => {
           ) : null}
 
           <Text style={styles.footnote}>
-            Saved to this device first, then uploaded automatically when you're online.
+            Saved to this device first, then uploaded automatically when you’re online.
           </Text>
         </ScrollView>
 
         <View style={styles.footer}>
           <View style={styles.footerInner}>
-            <Button title="Save capture" onPress={handleSave} disabled={importing} />
+            <Button
+              title={editing ? 'Save changes' : 'Save capture'}
+              onPress={handleSave}
+              disabled={importing}
+            />
           </View>
         </View>
       </KeyboardAvoidingView>

@@ -11,6 +11,7 @@ import {RootStackParamList} from './types';
 import {MainTabs} from './MainTabs';
 import {NewCaptureScreen} from '../screens/NewCaptureScreen';
 import {CaptureDetailScreen} from '../screens/CaptureDetailScreen';
+import {EditCaptureScreen} from '../screens/EditCaptureScreen';
 import {useTheme} from '../theme';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -54,6 +55,11 @@ export const RootNavigator: React.FC = () => {
         <Stack.Screen
           name="NewCapture"
           component={NewCaptureScreen}
+          options={{presentation: 'modal', headerShown: false}}
+        />
+        <Stack.Screen
+          name="EditCapture"
+          component={EditCaptureScreen}
           options={{presentation: 'modal', headerShown: false}}
         />
       </Stack.Navigator>

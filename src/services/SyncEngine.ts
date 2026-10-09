@@ -14,8 +14,11 @@
  *  - Reconnecting (or tapping "Sync now") retries everything, ignoring back-off,
  *    including 'error' items.
  *  - Anything left 'syncing' by a killed app is reset to 'pending' on start.
+ *  - Captures can be edited in any state. Each edit bumps `version`; a capture
+ *    needs syncing while version > syncedVersion. Editing during an upload lets
+ *    the upload finish, then re-queues the capture so the edit is sent next.
  */
-import {Attachment, FieldCapture} from '../types';
+import {Attachment, CaptureDraft, FieldCapture} from '../types';
 import {CaptureStore} from './StorageService';
 import {CaptureTransport, SyncError} from './SyncService';
 
@@ -90,9 +93,15 @@ export class SyncEngine {
   private async load() {
     const saved = await this.store.getAll();
     const stuck = saved.some(c => c.syncStatus === 'syncing');
-    this.captures = saved.map(c =>
-      c.syncStatus === 'syncing' ? {...c, syncStatus: 'pending'} : c,
-    );
+    this.captures = saved.map(c => {
+      const version = c.version ?? 1; // saved before versioning existed
+      return {
+        ...c,
+        version,
+        syncedVersion: c.syncedVersion ?? (c.syncStatus === 'synced' ? version : undefined),
+        syncStatus: c.syncStatus === 'syncing' ? 'pending' : c.syncStatus,
+      };
+    });
     this.emit();
     if (stuck) {
       await this.persist();
@@ -126,10 +135,53 @@ export class SyncEngine {
   add = async (capture: FieldCapture): Promise<void> => {
     await this.ensureLoaded();
     this.captures = [
-      {...capture, syncStatus: 'pending', retryCount: 0, nextRetryAt: undefined},
+      {
+        ...capture,
+        version: 1,
+        syncedVersion: undefined,
+        syncStatus: 'pending',
+        retryCount: 0,
+        nextRetryAt: undefined,
+      },
       ...this.captures,
     ];
     this.emit();
+    await this.persist();
+    this.flush();
+  };
+
+  /**
+   * Apply a local edit, in any state. A synced or failed capture goes back to
+   * 'pending' with fresh attempts; one that's mid-upload is left alone and
+   * re-queued when that upload finishes.
+   */
+  update = async (id: string, changes: Partial<CaptureDraft>): Promise<void> => {
+    await this.ensureLoaded();
+    const current = this.find(id);
+    if (!current) {
+      return;
+    }
+    const merged: Partial<FieldCapture> = {...changes};
+    if (changes.attachments) {
+      // Keep the engine's copy of existing files: one may have finished
+      // uploading (gained a remoteUrl) while the form was open.
+      merged.attachments = changes.attachments.map(
+        a => current.attachments?.find(x => x.id === a.id) ?? a,
+      );
+    }
+    this.patch(id, {
+      ...merged,
+      version: current.version + 1,
+      updatedAt: new Date().toISOString(),
+      ...(current.syncStatus === 'syncing'
+        ? {}
+        : {
+            syncStatus: 'pending' as const,
+            retryCount: 0,
+            nextRetryAt: undefined,
+            errorMessage: undefined,
+          }),
+    });
     await this.persist();
     this.flush();
   };
@@ -229,11 +281,19 @@ export class SyncEngine {
         return; // deleted mid-upload
       }
       await this.transport.uploadCapture(latest);
+      const current = this.find(id);
+      if (!current) {
+        return; // deleted mid-upload
+      }
+      // Edited while uploading? The server has `latest`; send the newer version next.
+      const editedMeanwhile = current.version > latest.version;
       this.patch(id, {
-        syncStatus: 'synced',
+        syncStatus: editedMeanwhile ? 'pending' : 'synced',
+        syncedVersion: latest.version,
         syncedAt: new Date().toISOString(),
         errorMessage: undefined,
         nextRetryAt: undefined,
+        retryCount: 0,
       });
     } catch (err: unknown) {
       const current = this.find(id);
@@ -264,30 +324,25 @@ export class SyncEngine {
     await this.persist();
   }
 
+  /** Upload every file without a remoteUrl, re-reading the list so files added mid-sync are included. */
   private async uploadAttachments(id: string) {
-    const all = this.find(id)?.attachments ?? [];
-    const totalBytes = all.reduce((sum, a) => sum + a.sizeBytes, 0) || 1;
-    let doneBytes = all
-      .filter(a => a.remoteUrl)
-      .reduce((sum, a) => sum + a.sizeBytes, 0);
-
-    for (const attachment of all) {
-      if (attachment.remoteUrl) {
-        continue;
-      }
+    for (;;) {
       const capture = this.find(id);
-      if (!capture) {
-        return; // deleted mid-upload
+      const all = capture?.attachments ?? [];
+      const next = all.find(a => !a.remoteUrl);
+      if (!capture || !next) {
+        return;
       }
+      const totalBytes = all.reduce((sum, a) => sum + a.sizeBytes, 0) || 1;
+      const doneBytes = all
+        .filter(a => a.remoteUrl)
+        .reduce((sum, a) => sum + a.sizeBytes, 0);
+
       this.setProgress(id, doneBytes / totalBytes);
-      const remoteUrl = await this.transport.uploadAttachment(
-        capture,
-        attachment,
-        fraction =>
-          this.setProgress(id, (doneBytes + fraction * attachment.sizeBytes) / totalBytes),
+      const remoteUrl = await this.transport.uploadAttachment(capture, next, fraction =>
+        this.setProgress(id, (doneBytes + fraction * next.sizeBytes) / totalBytes),
       );
-      doneBytes += attachment.sizeBytes;
-      this.patchAttachment(id, attachment.id, {remoteUrl});
+      this.patchAttachment(id, next.id, {remoteUrl});
       await this.persist();
     }
   }

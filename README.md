@@ -20,6 +20,7 @@ A field-capture app for the jobsite: record Daily Logs, RFIs, Punchlist items, I
 | 🔄 **Retry on reconnect** | Queue flushes automatically when the device comes back online |
 | ⏱ **Back-off** | Failed uploads retry after 2s, 4s… then move to `error` |
 | ✋ **Manual retry** | Retry button on `error` items, plus **Sync now** |
+| ✏️ **Edit anytime** | Edit a capture in any state — pending, syncing, failed or synced — and the change syncs |
 | 🧪 **Demo switch** | "Simulate server errors" on the Sync tab to show failures on demand |
 | 🎨 **Design system** | Token-based dark theme, Lucide icons, 48pt+ touch targets for gloved hands |
 | 📱 **Responsive** | Phone, phone landscape, iPad / Android tablets, split view: 1–3 column grid, side rail on wide windows, centred reading width for forms and details |
@@ -81,6 +82,7 @@ All sync behaviour lives in **`SyncEngine`**, a plain TypeScript class. React on
 - A failure while the device is **offline** doesn't use up an attempt (the signal dropped; the server didn't fail).
 - **Reconnecting** retries everything immediately, including `error` items.
 - If the app is killed mid-upload, items left in `syncing` go back to `pending` on next launch.
+- **Edits work in every state.** Each edit bumps a local `version`; a capture needs syncing while `version > syncedVersion`. A synced or failed capture goes back to `pending` (with fresh attempts). If it's edited **mid-upload**, that upload finishes and the capture is re-queued, so the newer version is sent next — no edit is ever lost.
 
 ---
 
@@ -96,7 +98,8 @@ All sync behaviour lives in **`SyncEngine`**, a plain TypeScript class. React on
 | **Sequential uploads** | Predictable order, gentle on weak connections, simple to reason about | Small concurrency limit (2–3) for large queues |
 | **Idempotency key = capture id** | A retry after a lost response can't create a duplicate on the server | Server must honour `Idempotency-Key` |
 | **Exponential back-off with jitter** | Avoids hammering a struggling server; jitter stops many devices retrying at once | Tune from real error data; respect `Retry-After` |
-| **Last write wins, no editing after save** | Out of scope for the brief | Version field + server-side conflict resolution |
+| **Edits tracked with `version` / `syncedVersion`** | One rule covers every state, including editing during an upload | Upload as `PUT /captures/{id}` (create and update are the same call); send `If-Match` with the server's version and surface a "changed on server" state on conflict |
+| **Last write wins** | Fine while one person owns a capture | Field-level merge, or prompt when an RFI was answered in the office meanwhile |
 
 ---
 
@@ -144,6 +147,7 @@ npm test
 4. **Reconnect**: turn the network back on → cards go **Syncing** (with an "Uploading media · 45%" bar) **→ Synced** automatically. Open a capture to view the photo or play the video; each file shows ☁️ Uploaded.
 5. **Errors**: on the **Sync** tab, turn on **Simulate server errors** and add a capture → uploads fail part-way, retry with back-off ("1 failed · retrying") and then show **Error**.
 6. **Retry**: turn the switch off and tap **↺ Retry** (or **Sync now**) → **Synced**.
+7. **Edit**: open a synced capture, tap **Edit**, change something and save → it goes back to **Pending → Syncing → Synced**, and the card shows *Edited*.
 
 ---
 

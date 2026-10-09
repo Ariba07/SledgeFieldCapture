@@ -44,12 +44,28 @@ export interface FieldCapture {
   weather?: string;        // Relevant for daily logs (jobsite condition)
   attachments?: Attachment[]; // Photos / videos, uploaded before the record itself
   capturedAt: string;      // ISO 8601
+  updatedAt?: string;      // ISO 8601 — last local edit
+  version: number;         // +1 on every local edit
+  syncedVersion?: number;  // Last version the server confirmed; version > syncedVersion ⇒ needs sync
   syncStatus: SyncStatus;
   syncedAt?: string;       // ISO 8601 — set once synced
   errorMessage?: string;   // Last sync error message
   retryCount: number;      // Failed attempts since last manual retry
   nextRetryAt?: string;    // ISO 8601 — earliest time an automatic retry may run
 }
+
+/** The fields a person fills in on the form (create or edit). */
+export type CaptureDraft = Pick<
+  FieldCapture,
+  | 'captureType'
+  | 'projectName'
+  | 'location'
+  | 'notes'
+  | 'priority'
+  | 'workerCount'
+  | 'weather'
+  | 'attachments'
+>;
 
 export interface AppState {
   captures: FieldCapture[];

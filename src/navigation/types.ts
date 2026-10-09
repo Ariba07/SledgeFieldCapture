@@ -13,6 +13,7 @@ export type MainTabParamList = {
 export type RootStackParamList = {
   MainTabs: NavigatorScreenParams<MainTabParamList>;
   NewCapture: undefined;
+  EditCapture: {captureId: string};
   CaptureDetail: {captureId: string};
 };
 
