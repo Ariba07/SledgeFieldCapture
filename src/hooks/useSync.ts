@@ -17,7 +17,14 @@ const isReachable = (state: NetInfoState) =>
   !!state.isConnected && state.isInternetReachable !== false;
 
 export const useSync = () => {
-  const [engine] = useState(() => new SyncEngine(StorageService, SyncService));
+  const [engine, setEngine] = useState(() => new SyncEngine(StorageService, SyncService));
+
+  // Dev only: Fast Refresh swaps in a new SyncEngine class but keeps hook
+  // state, leaving an instance of the old class (missing any new methods).
+  // Replace it; the effect below stops the old one and starts the new one.
+  if (__DEV__ && !(engine instanceof SyncEngine)) {
+    setEngine(new SyncEngine(StorageService, SyncService));
+  }
 
   useEffect(() => {
     engine.start();
