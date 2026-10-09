@@ -10,9 +10,9 @@ const SIMULATED_DELAY_MS = 1500;
 const FAIL_RATE = 0.2; // 20 % artificial failure
 
 export const SyncService = {
-  async uploadCapture(capture: FieldCapture): Promise<void> {
+  async uploadCapture(_capture: FieldCapture): Promise<void> {
     // Simulate network latency
-    await new Promise(res => setTimeout(res, SIMULATED_DELAY_MS));
+    await new Promise(res => setTimeout(() => res(undefined), SIMULATED_DELAY_MS));
 
     // Simulate occasional failures
     if (Math.random() < FAIL_RATE) {

@@ -12,11 +12,17 @@ import {formatTimestamp} from '../utils/helpers';
 
 interface Props {
   capture: FieldCapture;
+  onPress: () => void;
   onRetry: (id: string) => void;
   onDelete: (id: string) => void;
 }
 
-export const CaptureCard: React.FC<Props> = ({capture, onRetry, onDelete}) => {
+export const CaptureCard: React.FC<Props> = ({
+  capture,
+  onPress,
+  onRetry,
+  onDelete,
+}) => {
   const scaleAnim = React.useRef(new Animated.Value(0.95)).current;
 
   React.useEffect(() => {
@@ -32,6 +38,11 @@ export const CaptureCard: React.FC<Props> = ({capture, onRetry, onDelete}) => {
 
   return (
     <Animated.View style={[styles.card, {transform: [{scale: scaleAnim}]}]}>
+      <TouchableOpacity
+        activeOpacity={0.7}
+        onPress={onPress}
+        accessibilityRole="button"
+        accessibilityLabel={`Open ${capture.projectName}`}>
       {/* Header row */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
@@ -81,6 +92,8 @@ export const CaptureCard: React.FC<Props> = ({capture, onRetry, onDelete}) => {
           {capture.notes}
         </Text>
       ) : null}
+
+      </TouchableOpacity>
 
       {/* Footer: timestamp + actions */}
       <View style={styles.footer}>

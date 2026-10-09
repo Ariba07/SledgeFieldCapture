@@ -1,42 +1,34 @@
-import React, {useState} from 'react';
+import React from 'react';
 import {
   View,
   Text,
   StyleSheet,
   FlatList,
   TouchableOpacity,
-  Modal,
-  SafeAreaView,
   StatusBar,
 } from 'react-native';
-import {useSync} from '../hooks/useSync';
+import {SafeAreaView} from 'react-native-safe-area-context';
+import {useSyncContext} from '../context/SyncContext';
 import {CaptureCard} from '../components/CaptureCard';
-import {CaptureForm} from '../components/CaptureForm';
 import {NetworkBanner} from '../components/NetworkBanner';
-import {FieldCapture} from '../types';
+import {MainTabScreenProps} from '../navigation/types';
 
-export const HomeScreen: React.FC = () => {
+export const HomeScreen: React.FC<MainTabScreenProps<'Captures'>> = ({
+  navigation,
+}) => {
   const {
     captures,
     isOnline,
     isSyncing,
-    addCapture,
     retryCapture,
     deleteCapture,
     flushPendingCaptures,
-  } = useSync();
-
-  const [showForm, setShowForm] = useState(false);
+  } = useSyncContext();
 
   const pendingCount = captures.filter(
     c => c.syncStatus === 'pending' || c.syncStatus === 'error',
   ).length;
   const syncedCount = captures.filter(c => c.syncStatus === 'synced').length;
-
-  const handleSave = async (capture: FieldCapture) => {
-    setShowForm(false);
-    await addCapture(capture);
-  };
 
   const renderEmpty = () => (
     <View style={styles.empty}>
@@ -49,8 +41,8 @@ export const HomeScreen: React.FC = () => {
   );
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <StatusBar barStyle="light-content" backgroundColor="#0F172A" />
+    <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
+      <StatusBar barStyle="light-content" />
 
       {/* Slide-in network banner */}
       <NetworkBanner
@@ -70,18 +62,18 @@ export const HomeScreen: React.FC = () => {
         <View
           style={[
             styles.statusPill,
-            {backgroundColor: isOnline ? '#064E3B' : '#450A0A'},
+            isOnline ? styles.statusPillOnline : styles.statusPillOffline,
           ]}>
           <View
             style={[
               styles.statusDot,
-              {backgroundColor: isOnline ? '#34D399' : '#F87171'},
+              isOnline ? styles.statusDotOnline : styles.statusDotOffline,
             ]}
           />
           <Text
             style={[
               styles.statusLabel,
-              {color: isOnline ? '#6EE7B7' : '#FCA5A5'},
+              isOnline ? styles.statusLabelOnline : styles.statusLabelOffline,
             ]}>
             {isOnline ? 'Online' : 'Offline'}
           </Text>
@@ -95,13 +87,13 @@ export const HomeScreen: React.FC = () => {
           <Text style={styles.statLabel}>Total</Text>
         </View>
         <View style={styles.statBox}>
-          <Text style={[styles.statValue, {color: '#FBBF24'}]}>
+          <Text style={[styles.statValue, styles.pendingColor]}>
             {pendingCount}
           </Text>
           <Text style={styles.statLabel}>Pending</Text>
         </View>
         <View style={styles.statBox}>
-          <Text style={[styles.statValue, {color: '#34D399'}]}>
+          <Text style={[styles.statValue, styles.syncedColor]}>
             {syncedCount}
           </Text>
           <Text style={styles.statLabel}>Synced</Text>
@@ -125,6 +117,9 @@ export const HomeScreen: React.FC = () => {
         renderItem={({item}) => (
           <CaptureCard
             capture={item}
+            onPress={() =>
+              navigation.navigate('CaptureDetail', {captureId: item.id})
+            }
             onRetry={retryCapture}
             onDelete={deleteCapture}
           />
@@ -137,22 +132,11 @@ export const HomeScreen: React.FC = () => {
       {/* ── FAB ── */}
       <TouchableOpacity
         style={styles.fab}
-        onPress={() => setShowForm(true)}
+        onPress={() => navigation.navigate('NewCapture')}
         accessibilityLabel="New capture">
         <Text style={styles.fabIcon}>+</Text>
       </TouchableOpacity>
 
-      {/* ── New Capture Modal ── */}
-      <Modal
-        visible={showForm}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setShowForm(false)}>
-        <CaptureForm
-          onSave={handleSave}
-          onCancel={() => setShowForm(false)}
-        />
-      </Modal>
     </SafeAreaView>
   );
 };
@@ -184,6 +168,14 @@ const styles = StyleSheet.create({
   },
   statusDot: {width: 7, height: 7, borderRadius: 4},
   statusLabel: {fontSize: 13, fontWeight: '700'},
+  statusPillOnline: {backgroundColor: '#064E3B'},
+  statusPillOffline: {backgroundColor: '#450A0A'},
+  statusDotOnline: {backgroundColor: '#34D399'},
+  statusDotOffline: {backgroundColor: '#F87171'},
+  statusLabelOnline: {color: '#6EE7B7'},
+  statusLabelOffline: {color: '#FCA5A5'},
+  pendingColor: {color: '#FBBF24'},
+  syncedColor: {color: '#34D399'},
   statsRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -224,7 +216,7 @@ const styles = StyleSheet.create({
   fab: {
     position: 'absolute',
     right: 20,
-    bottom: 32,
+    bottom: 20,
     width: 60,
     height: 60,
     borderRadius: 30,

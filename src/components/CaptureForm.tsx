@@ -130,7 +130,8 @@ export const CaptureForm: React.FC<Props> = ({onSave, onCancel}) => {
                   <Text
                     style={[
                       styles.chipText,
-                      isActive && {color: cfg.color, fontWeight: '700'},
+                      isActive && {color: cfg.color},
+                      isActive && styles.chipTextPriorityActive,
                     ]}>
                     {cfg.label}
                   </Text>
@@ -172,7 +173,7 @@ export const CaptureForm: React.FC<Props> = ({onSave, onCancel}) => {
         {captureType === 'daily_log' && (
           <>
             <View style={styles.row}>
-              <View style={[styles.field, {flex: 1, marginRight: 8}]}>
+              <View style={[styles.field, styles.workerCountField]}>
                 <Text style={styles.label}>Workers on Site</Text>
                 <TextInput
                   style={styles.input}
@@ -183,7 +184,7 @@ export const CaptureForm: React.FC<Props> = ({onSave, onCancel}) => {
                   keyboardType="number-pad"
                 />
               </View>
-              <View style={[styles.field, {flex: 1}]}>
+              <View style={[styles.field, styles.weatherField]}>
                 <Text style={styles.label}>Weather</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                   <View style={styles.chipRow}>
@@ -193,10 +194,10 @@ export const CaptureForm: React.FC<Props> = ({onSave, onCancel}) => {
                         style={[
                           styles.chip,
                           weather === w && styles.chipActive,
-                          {paddingHorizontal: 8},
+                          styles.weatherChip,
                         ]}
                         onPress={() => setWeather(weather === w ? '' : w)}>
-                        <Text style={[styles.chipText, {fontSize: 11}, weather === w && styles.chipTextActive]}>
+                        <Text style={[styles.chipText, styles.weatherChipText, weather === w && styles.chipTextActive]}>
                           {w}
                         </Text>
                       </TouchableOpacity>
@@ -309,7 +310,12 @@ const styles = StyleSheet.create({
     borderColor: '#3B82F6',
   },
   chipText: {fontSize: 12, color: '#94A3B8', fontWeight: '500'},
+  chipTextPriorityActive: {fontWeight: '700'},
   chipTextActive: {color: '#60A5FA', fontWeight: '700'},
+  workerCountField: {flex: 1, marginRight: 8},
+  weatherField: {flex: 1},
+  weatherChip: {paddingHorizontal: 8},
+  weatherChipText: {fontSize: 11},
   offlineBadge: {
     backgroundColor: '#1E293B',
     borderRadius: 10,
