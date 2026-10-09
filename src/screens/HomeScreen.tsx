@@ -18,6 +18,7 @@ export const HomeScreen: React.FC<MainTabScreenProps<'Captures'>> = ({
 }) => {
   const {
     captures,
+    progress,
     isOnline,
     isSyncing,
     retryCapture,
@@ -114,9 +115,11 @@ export const HomeScreen: React.FC<MainTabScreenProps<'Captures'>> = ({
       <FlatList
         data={captures}
         keyExtractor={item => item.id}
+        extraData={progress}
         renderItem={({item}) => (
           <CaptureCard
             capture={item}
+            progress={progress[item.id]}
             onPress={() =>
               navigation.navigate('CaptureDetail', {captureId: item.id})
             }

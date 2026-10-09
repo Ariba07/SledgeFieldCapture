@@ -1,5 +1,6 @@
-import React, {useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {
+  ActivityIndicator,
   View,
   Text,
   TextInput,
@@ -11,6 +12,7 @@ import {
   Alert,
 } from 'react-native';
 import {
+  Attachment,
   FieldCapture,
   CaptureType,
   Priority,
@@ -18,6 +20,12 @@ import {
   PRIORITY_LABELS,
 } from '../types';
 import {generateId} from '../utils/helpers';
+import {
+  MAX_ATTACHMENTS,
+  MediaService,
+  MediaSource,
+} from '../services/MediaService';
+import {AttachmentThumb} from './AttachmentThumb';
 
 interface Props {
   onSave: (capture: FieldCapture) => void;
@@ -34,6 +42,12 @@ const CAPTURE_TYPES: CaptureType[] = [
 
 const PRIORITIES: Priority[] = ['low', 'medium', 'high'];
 
+const MEDIA_BUTTONS: {source: MediaSource; label: string}[] = [
+  {source: 'camera_photo', label: '📷 Photo'},
+  {source: 'camera_video', label: '🎥 Video'},
+  {source: 'library', label: '🖼️ Library'},
+];
+
 const WEATHER_OPTIONS = ['☀️ Clear', '⛅ Cloudy', '🌧️ Rain', '💨 Windy', '🌡️ Extreme Heat', '❄️ Cold'];
 
 export const CaptureForm: React.FC<Props> = ({onSave, onCancel}) => {
@@ -44,6 +58,47 @@ export const CaptureForm: React.FC<Props> = ({onSave, onCancel}) => {
   const [priority, setPriority] = useState<Priority>('medium');
   const [workerCount, setWorkerCount] = useState('');
   const [weather, setWeather] = useState('');
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [importing, setImporting] = useState(false);
+
+  // Media is copied into app storage as soon as it's picked. If the form is
+  // closed without saving (Cancel or swipe-down), delete those copies.
+  const savedRef = useRef(false);
+  const attachmentsRef = useRef(attachments);
+  attachmentsRef.current = attachments;
+  useEffect(
+    () => () => {
+      if (!savedRef.current) {
+        MediaService.remove(attachmentsRef.current);
+      }
+    },
+    [],
+  );
+
+  const addMedia = async (source: MediaSource) => {
+    const remaining = MAX_ATTACHMENTS - attachments.length;
+    if (remaining <= 0) {
+      Alert.alert('Limit reached', `Up to ${MAX_ATTACHMENTS} photos or videos per capture.`);
+      return;
+    }
+    setImporting(true);
+    try {
+      const added = await MediaService.pick(source, remaining);
+      setAttachments(prev => [...prev, ...added]);
+    } catch (err) {
+      Alert.alert(
+        "Couldn't add media",
+        err instanceof Error ? err.message : 'Something went wrong.',
+      );
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const removeMedia = (attachment: Attachment) => {
+    setAttachments(prev => prev.filter(a => a.id !== attachment.id));
+    MediaService.remove([attachment]);
+  };
 
   const handleSave = () => {
     if (!projectName.trim()) {
@@ -64,11 +119,13 @@ export const CaptureForm: React.FC<Props> = ({onSave, onCancel}) => {
       priority,
       workerCount: workerCount ? parseInt(workerCount, 10) : undefined,
       weather: weather || undefined,
+      attachments,
       capturedAt: new Date().toISOString(),
       syncStatus: 'pending',
       retryCount: 0,
     };
 
+    savedRef.current = true;
     onSave(capture);
   };
 
@@ -232,6 +289,40 @@ export const CaptureForm: React.FC<Props> = ({onSave, onCancel}) => {
           />
         </View>
 
+        {/* ── Photos & Videos ── */}
+        <View style={styles.field}>
+          <Text style={styles.label}>
+            Photos & Videos{attachments.length ? ` (${attachments.length})` : ''}
+          </Text>
+          <View style={styles.mediaButtonRow}>
+            {MEDIA_BUTTONS.map(b => (
+              <TouchableOpacity
+                key={b.source}
+                style={[styles.mediaBtn, importing && styles.mediaBtnDisabled]}
+                onPress={() => addMedia(b.source)}
+                disabled={importing}
+                accessibilityLabel={b.label}>
+                <Text style={styles.mediaBtnText}>{b.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+          {attachments.length > 0 || importing ? (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.thumbRow}>
+              {attachments.map(a => (
+                <AttachmentThumb key={a.id} attachment={a} size={76} onRemove={removeMedia} />
+              ))}
+              {importing ? (
+                <View style={styles.importingTile}>
+                  <ActivityIndicator color="#94A3B8" />
+                </View>
+              ) : null}
+            </ScrollView>
+          ) : null}
+        </View>
+
         {/* ── Offline indicator ── */}
         <View style={styles.offlineBadge}>
           <Text style={styles.offlineBadgeText}>
@@ -249,6 +340,7 @@ export const CaptureForm: React.FC<Props> = ({onSave, onCancel}) => {
           <TouchableOpacity
             style={[styles.btn, styles.saveBtn]}
             onPress={handleSave}
+            disabled={importing}
             accessibilityLabel="Save capture">
             <Text style={styles.saveBtnText}>Save Capture</Text>
           </TouchableOpacity>
@@ -316,6 +408,27 @@ const styles = StyleSheet.create({
   weatherField: {flex: 1},
   weatherChip: {paddingHorizontal: 8},
   weatherChipText: {fontSize: 11},
+  mediaButtonRow: {flexDirection: 'row', gap: 8},
+  mediaBtn: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: '#1E293B',
+    borderWidth: 1,
+    borderColor: '#334155',
+    alignItems: 'center',
+  },
+  mediaBtnDisabled: {opacity: 0.5},
+  mediaBtnText: {color: '#E2E8F0', fontWeight: '700', fontSize: 13},
+  thumbRow: {gap: 8, paddingTop: 10},
+  importingTile: {
+    width: 76,
+    height: 76,
+    borderRadius: 10,
+    backgroundColor: '#1E293B',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   offlineBadge: {
     backgroundColor: '#1E293B',
     borderRadius: 10,

@@ -6,6 +6,8 @@
  *  - Every capture is persisted before it is considered saved; new ones start 'pending'.
  *  - Only one flush runs at a time. Requests made during a flush queue one more pass.
  *  - Items upload one at a time, oldest first.
+ *  - A capture's photos/videos upload before the record. Each finished file is
+ *    persisted with its remote URL, so a retry resumes instead of re-uploading.
  *  - A failed upload goes back to 'pending' with exponential back-off, and to
  *    'error' after `maxAttempts` (or immediately if the server says it's not retryable).
  *  - A failure while the device is offline doesn't count as an attempt.
@@ -13,7 +15,7 @@
  *    including 'error' items.
  *  - Anything left 'syncing' by a killed app is reset to 'pending' on start.
  */
-import {FieldCapture} from '../types';
+import {Attachment, FieldCapture} from '../types';
 import {CaptureStore} from './StorageService';
 import {CaptureTransport, SyncError} from './SyncService';
 
@@ -21,6 +23,8 @@ export interface SyncSnapshot {
   captures: FieldCapture[];
   isOnline: boolean;
   isSyncing: boolean;
+  /** Media upload progress (0…1) for the capture currently syncing. In memory only. */
+  progress: Record<string, number>;
 }
 
 export interface SyncEngineOptions {
@@ -39,7 +43,13 @@ export class SyncEngine {
   private captures: FieldCapture[] = [];
   private isOnline = false;
   private isSyncing = false;
-  private snapshot: SyncSnapshot = {captures: [], isOnline: false, isSyncing: false};
+  private progress: Record<string, number> = {};
+  private snapshot: SyncSnapshot = {
+    captures: [],
+    isOnline: false,
+    isSyncing: false,
+    progress: {},
+  };
   private listeners = new Set<() => void>();
 
   private ready: Promise<void> | null = null;
@@ -213,7 +223,12 @@ export class SyncEngine {
     }
 
     try {
-      await this.transport.uploadCapture(capture);
+      await this.uploadAttachments(id);
+      const latest = this.find(id);
+      if (!latest) {
+        return; // deleted mid-upload
+      }
+      await this.transport.uploadCapture(latest);
       this.patch(id, {
         syncStatus: 'synced',
         syncedAt: new Date().toISOString(),
@@ -243,8 +258,38 @@ export class SyncEngine {
             : new Date(Date.now() + this.backoffMs(retryCount)).toISOString(),
         });
       }
+    } finally {
+      this.setProgress(id, undefined);
     }
     await this.persist();
+  }
+
+  private async uploadAttachments(id: string) {
+    const all = this.find(id)?.attachments ?? [];
+    const totalBytes = all.reduce((sum, a) => sum + a.sizeBytes, 0) || 1;
+    let doneBytes = all
+      .filter(a => a.remoteUrl)
+      .reduce((sum, a) => sum + a.sizeBytes, 0);
+
+    for (const attachment of all) {
+      if (attachment.remoteUrl) {
+        continue;
+      }
+      const capture = this.find(id);
+      if (!capture) {
+        return; // deleted mid-upload
+      }
+      this.setProgress(id, doneBytes / totalBytes);
+      const remoteUrl = await this.transport.uploadAttachment(
+        capture,
+        attachment,
+        fraction =>
+          this.setProgress(id, (doneBytes + fraction * attachment.sizeBytes) / totalBytes),
+      );
+      doneBytes += attachment.sizeBytes;
+      this.patchAttachment(id, attachment.id, {remoteUrl});
+      await this.persist();
+    }
   }
 
   /** 2s, 4s, 8s… capped, with up to 20% jitter so devices don't retry in lockstep. */
@@ -308,6 +353,36 @@ export class SyncEngine {
     return found;
   }
 
+  private patchAttachment(captureId: string, attachmentId: string, changes: Partial<Attachment>) {
+    const capture = this.find(captureId);
+    if (capture?.attachments) {
+      this.patch(captureId, {
+        attachments: capture.attachments.map(a =>
+          a.id === attachmentId ? {...a, ...changes} : a,
+        ),
+      });
+    }
+  }
+
+  /** Emits only on whole-percent changes so fast progress events don't flood renders. */
+  private setProgress(id: string, fraction: number | undefined) {
+    if (fraction === undefined) {
+      if (!(id in this.progress)) {
+        return;
+      }
+      const rest = {...this.progress};
+      delete rest[id];
+      this.progress = rest;
+    } else {
+      const rounded = Math.round(fraction * 100) / 100;
+      if (this.progress[id] === rounded) {
+        return;
+      }
+      this.progress = {...this.progress, [id]: rounded};
+    }
+    this.emit();
+  }
+
   private persist(): Promise<void> {
     return this.store.saveAll(this.captures).catch(err => {
       console.warn('[SyncEngine] failed to persist captures', err);
@@ -326,6 +401,7 @@ export class SyncEngine {
       captures: this.captures,
       isOnline: this.isOnline,
       isSyncing: this.isSyncing,
+      progress: this.progress,
     };
     this.listeners.forEach(l => l());
   }

@@ -9,6 +9,7 @@ import NetInfo, {NetInfoState} from '@react-native-community/netinfo';
 import {StorageService} from '../services/StorageService';
 import {SyncService} from '../services/SyncService';
 import {SyncEngine} from '../services/SyncEngine';
+import {MediaService} from '../services/MediaService';
 
 // isInternetReachable is null while unknown; only treat an explicit false as offline.
 const isReachable = (state: NetInfoState) =>
@@ -35,7 +36,11 @@ export const useSync = () => {
       ...state,
       addCapture: engine.add,
       retryCapture: engine.retry,
-      deleteCapture: engine.remove,
+      deleteCapture: async (id: string) => {
+        const capture = state.captures.find(c => c.id === id);
+        await engine.remove(id);
+        await MediaService.remove(capture?.attachments);
+      },
       flushPendingCaptures: () => engine.flush(true),
     }),
     [state, engine],

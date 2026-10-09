@@ -19,6 +19,7 @@ export const SyncScreen: React.FC<MainTabScreenProps<'Sync'>> = ({
 }) => {
   const {
     captures,
+    progress,
     isOnline,
     isSyncing,
     retryCapture,
@@ -98,9 +99,11 @@ export const SyncScreen: React.FC<MainTabScreenProps<'Sync'>> = ({
       <FlatList
         data={queue}
         keyExtractor={item => item.id}
+        extraData={progress}
         renderItem={({item}) => (
           <CaptureCard
             capture={item}
+            progress={progress[item.id]}
             onPress={() =>
               navigation.navigate('CaptureDetail', {captureId: item.id})
             }

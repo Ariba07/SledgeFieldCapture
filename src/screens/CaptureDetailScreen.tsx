@@ -6,12 +6,15 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  Image,
 } from 'react-native';
+import Video from 'react-native-video';
 import {useSyncContext} from '../context/SyncContext';
 import {RootStackScreenProps} from '../navigation/types';
 import {SyncBadge} from '../components/SyncBadge';
-import {CAPTURE_TYPE_LABELS, PRIORITY_LABELS} from '../types';
-import {formatTimestamp} from '../utils/helpers';
+import {Attachment, CAPTURE_TYPE_LABELS, PRIORITY_LABELS} from '../types';
+import {formatBytes, formatDuration, formatTimestamp} from '../utils/helpers';
+import {attachmentUri} from '../services/MediaService';
 
 export const CaptureDetailScreen: React.FC<
   RootStackScreenProps<'CaptureDetail'>
@@ -87,6 +90,17 @@ export const CaptureDetailScreen: React.FC<
         <Text style={styles.notes}>{capture.notes || '—'}</Text>
       </View>
 
+      {capture.attachments?.length ? (
+        <View style={styles.field}>
+          <Text style={styles.label}>
+            Photos & Videos ({capture.attachments.length})
+          </Text>
+          {capture.attachments.map(a => (
+            <MediaItem key={a.id} attachment={a} />
+          ))}
+        </View>
+      ) : null}
+
       <View style={styles.buttonRow}>
         {capture.syncStatus === 'error' && (
           <TouchableOpacity
@@ -104,6 +118,40 @@ export const CaptureDetailScreen: React.FC<
         </TouchableOpacity>
       </View>
     </ScrollView>
+  );
+};
+
+const MediaItem: React.FC<{attachment: Attachment}> = ({attachment: a}) => {
+  const aspectRatio = a.width && a.height ? a.width / a.height : a.kind === 'video' ? 16 / 9 : 4 / 3;
+  const uri = attachmentUri(a);
+  const meta = [
+    a.kind === 'video' ? 'Video' : 'Photo',
+    a.durationSec != null ? formatDuration(a.durationSec) : null,
+    a.sizeBytes ? formatBytes(a.sizeBytes) : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+
+  return (
+    <View style={styles.mediaItem}>
+      {a.kind === 'video' ? (
+        <Video
+          source={{uri}}
+          style={[styles.media, {aspectRatio}]}
+          controls
+          paused
+          resizeMode="contain"
+        />
+      ) : (
+        <Image source={{uri}} style={[styles.media, {aspectRatio}]} resizeMode="contain" />
+      )}
+      <View style={styles.mediaMetaRow}>
+        <Text style={styles.mediaMeta}>{meta}</Text>
+        <Text style={[styles.mediaMeta, a.remoteUrl ? styles.uploaded : styles.notUploaded]}>
+          {a.remoteUrl ? '☁️ Uploaded' : '⏳ Not uploaded yet'}
+        </Text>
+      </View>
+    </View>
   );
 };
 
@@ -149,6 +197,17 @@ const styles = StyleSheet.create({
     borderColor: '#334155',
     padding: 14,
   },
+  mediaItem: {marginBottom: 12},
+  media: {
+    width: '100%',
+    maxHeight: 420,
+    borderRadius: 12,
+    backgroundColor: '#020617',
+  },
+  mediaMetaRow: {flexDirection: 'row', justifyContent: 'space-between', marginTop: 6},
+  mediaMeta: {fontSize: 12, color: '#94A3B8'},
+  uploaded: {color: '#34D399'},
+  notUploaded: {color: '#F59E0B'},
   buttonRow: {flexDirection: 'row', gap: 12, marginTop: 8},
   btn: {flex: 1, paddingVertical: 15, borderRadius: 14, alignItems: 'center'},
   retryBtn: {backgroundColor: '#1D4ED8'},

@@ -1,7 +1,7 @@
 import {SyncEngine} from '../src/services/SyncEngine';
 import {CaptureStore} from '../src/services/StorageService';
 import {CaptureTransport, SyncError} from '../src/services/SyncService';
-import {FieldCapture, SyncStatus} from '../src/types';
+import {Attachment, FieldCapture, SyncStatus} from '../src/types';
 
 // ── Fakes ────────────────────────────────────────────────────────────
 
@@ -15,12 +15,35 @@ class MemoryStore implements CaptureStore {
   }
 }
 
-/** Each upload waits until the test resolves or rejects it. */
+interface Call {
+  id: string;
+  kind: 'file' | 'record';
+  resolve: () => void;
+  reject: (e: Error) => void;
+  onProgress?: (fraction: number) => void;
+}
+
+/** Each upload (file or record) waits until the test resolves or rejects it. */
 class ControlledTransport implements CaptureTransport {
-  calls: {id: string; resolve: () => void; reject: (e: Error) => void}[] = [];
+  calls: Call[] = [];
+  uploadAttachment(
+    _capture: FieldCapture,
+    attachment: Attachment,
+    onProgress: (fraction: number) => void,
+  ) {
+    return new Promise<string>((resolve, reject) => {
+      this.calls.push({
+        id: attachment.id,
+        kind: 'file',
+        resolve: () => resolve(`https://cdn.test/${attachment.id}`),
+        reject,
+        onProgress,
+      });
+    });
+  }
   uploadCapture(capture: FieldCapture) {
     return new Promise<void>((resolve, reject) => {
-      this.calls.push({id: capture.id, resolve, reject});
+      this.calls.push({id: capture.id, kind: 'record', resolve, reject});
     });
   }
   get inFlight() {
@@ -44,6 +67,14 @@ const makeCapture = (id: string, syncStatus: SyncStatus = 'pending'): FieldCaptu
   capturedAt: new Date().toISOString(),
   syncStatus,
   retryCount: 0,
+});
+
+const makeAttachment = (id: string, sizeBytes: number): Attachment => ({
+  id,
+  kind: 'photo',
+  fileName: `${id}.jpg`,
+  mimeType: 'image/jpeg',
+  sizeBytes,
 });
 
 /** Let pending promise callbacks run. */
@@ -248,5 +279,60 @@ describe('SyncEngine', () => {
 
     expect(engine.getSnapshot().captures).toEqual([]);
     expect(store.data).toEqual([]);
+  });
+
+  describe('attachments', () => {
+    const withMedia = () => ({
+      ...makeCapture('a'),
+      attachments: [makeAttachment('p1', 300), makeAttachment('p2', 100)],
+    });
+
+    it('uploads each file before the record and reports progress', async () => {
+      engine.setOnline(true);
+      await engine.add(withMedia());
+      await settle();
+
+      expect(transport.calls.map(c => [c.kind, c.id])).toEqual([['file', 'p1']]);
+      transport.calls[0].onProgress!(0.5);
+      expect(engine.getSnapshot().progress.a).toBe(0.38); // 150 of 400 bytes
+
+      transport.succeed();
+      await settle();
+      expect(engine.getSnapshot().progress.a).toBe(0.75);
+      expect(transport.calls.map(c => [c.kind, c.id])).toEqual([['file', 'p2']]);
+
+      transport.succeed();
+      await settle();
+      expect(transport.calls.map(c => [c.kind, c.id])).toEqual([['record', 'a']]);
+
+      transport.succeed();
+      await settle();
+      const a = engine.getSnapshot().captures[0];
+      expect(a.syncStatus).toBe('synced');
+      expect(a.attachments!.map(x => x.remoteUrl)).toEqual([
+        'https://cdn.test/p1',
+        'https://cdn.test/p2',
+      ]);
+      expect(store.data[0].attachments![0].remoteUrl).toBe('https://cdn.test/p1');
+      expect(engine.getSnapshot().progress).toEqual({});
+    });
+
+    it('resumes after a failure without re-uploading finished files', async () => {
+      engine.setOnline(true);
+      await engine.add(withMedia());
+      await settle();
+
+      transport.succeed(); // p1 done
+      await settle();
+      transport.fail(); // p2 fails
+      await settle();
+
+      expect(statusOf(engine, 'a')).toBe('pending');
+      expect(engine.getSnapshot().progress).toEqual({});
+
+      jest.advanceTimersByTime(1000);
+      await settle();
+      expect(transport.calls.map(c => [c.kind, c.id])).toEqual([['file', 'p2']]);
+    });
   });
 });

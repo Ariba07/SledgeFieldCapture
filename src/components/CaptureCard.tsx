@@ -8,10 +8,13 @@ import {
 } from 'react-native';
 import {FieldCapture, CAPTURE_TYPE_LABELS, PRIORITY_LABELS} from '../types';
 import {SyncBadge} from './SyncBadge';
+import {AttachmentThumb} from './AttachmentThumb';
 import {formatTimestamp} from '../utils/helpers';
 
 interface Props {
   capture: FieldCapture;
+  /** Media upload progress (0…1) while this capture is syncing. */
+  progress?: number;
   onPress: () => void;
   onRetry: (id: string) => void;
   onDelete: (id: string) => void;
@@ -19,6 +22,7 @@ interface Props {
 
 export const CaptureCard: React.FC<Props> = ({
   capture,
+  progress,
   onPress,
   onRetry,
   onDelete,
@@ -35,6 +39,8 @@ export const CaptureCard: React.FC<Props> = ({
   }, [scaleAnim]);
 
   const priorityCfg = PRIORITY_LABELS[capture.priority];
+  const attachments = capture.attachments ?? [];
+  const extraCount = attachments.length - MAX_THUMBS;
 
   return (
     <Animated.View style={[styles.card, {transform: [{scale: scaleAnim}]}]}>
@@ -94,6 +100,26 @@ export const CaptureCard: React.FC<Props> = ({
         </Text>
       ) : null}
 
+      {/* Photos & videos */}
+      {attachments.length > 0 ? (
+        <View style={styles.thumbRow}>
+          {attachments.slice(0, MAX_THUMBS).map(a => (
+            <AttachmentThumb key={a.id} attachment={a} size={48} />
+          ))}
+          {extraCount > 0 ? <Text style={styles.moreText}>+{extraCount}</Text> : null}
+        </View>
+      ) : null}
+
+      {/* Upload progress */}
+      {capture.syncStatus === 'syncing' && progress != null ? (
+        <View style={styles.progressWrap} accessibilityLabel={`Uploading ${Math.round(progress * 100)}%`}>
+          <View style={styles.progressTrack}>
+            <View style={[styles.progressFill, {width: `${Math.round(progress * 100)}%`}]} />
+          </View>
+          <Text style={styles.progressText}>Uploading media · {Math.round(progress * 100)}%</Text>
+        </View>
+      ) : null}
+
       </TouchableOpacity>
 
       {/* Footer: timestamp + actions */}
@@ -122,6 +148,8 @@ export const CaptureCard: React.FC<Props> = ({
     </Animated.View>
   );
 };
+
+const MAX_THUMBS = 4;
 
 const styles = StyleSheet.create({
   card: {
@@ -184,6 +212,12 @@ const styles = StyleSheet.create({
     lineHeight: 19,
     marginBottom: 10,
   },
+  thumbRow: {flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 10},
+  moreText: {fontSize: 12, fontWeight: '700', color: '#94A3B8', marginLeft: 2},
+  progressWrap: {marginBottom: 10},
+  progressTrack: {height: 4, borderRadius: 2, backgroundColor: '#0F172A', overflow: 'hidden'},
+  progressFill: {height: 4, borderRadius: 2, backgroundColor: '#3B82F6'},
+  progressText: {fontSize: 11, color: '#60A5FA', marginTop: 4, fontWeight: '600'},
   footer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
